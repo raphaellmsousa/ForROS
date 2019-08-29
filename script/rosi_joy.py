@@ -41,6 +41,7 @@ class RosiNodeClass():
 		self.bridge = CvBridge()
 		self.velodyneOut = None
 		self.hokuyoOut = None
+		self.robotMovement = None
 		#self.time = 0
 
 		# computing the kinematic A matrix
@@ -67,6 +68,9 @@ class RosiNodeClass():
 
 		# hokuyo subscriber
 		self.sub_hokuyo = rospy.Subscriber('/sensor/hokuyo', HokuyoReading, self.callback_hokuyo)
+
+		# traction_speed subscriber
+		self.sub_traction_speed = rospy.Subscriber('/rosi/command_traction_speed', RosiMovementArray, self.callback_traction_speed)
 
 		# defining the eternal loop frequency
 		node_sleep_rate = rospy.Rate(10)
@@ -220,12 +224,18 @@ class RosiNodeClass():
 	#https://www.youtube.com/watch?v=RFNNsDI2b6c
 	def callback_hokuyo(self, msg):
 		#rospy.loginfo("Test Hokuyo Callback")
-		#self.hokuyoOut = msg
-		#self.time = self.time + 1;
-		print(msg.reading[0]) # We have 135 points: from 0 to 134
-		#print(self.time)
+		self.hokuyoOut = msg
+		#print(self.hokuyoOut.reading[0]) # We have 135 points: from 0 to 134
 		return None
 	
+	def callback_traction_speed(self, msg):
+		#rospy.loginfo("Test traction_speed Callback")
+		self.robotMovement = msg
+		movement_array = [[p.joint_var] for p in self.robotMovement.movement_array]
+		print(movement_array)		
+		#print(self.robotMovement.movement_array[0])
+		return None
+
 	# ---- Support Methods --------
 
 	# -- Method for compute the skid-steer A kinematic matrix
