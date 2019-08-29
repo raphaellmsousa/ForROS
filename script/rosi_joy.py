@@ -11,11 +11,14 @@ import cv2
 from cv_bridge import CvBridge, CvBridgeError
 import numpy as np
 
+from sensor_msgs.msg import PointCloud
+from rosi_defy.msg import HokuyoReading
+
 class RosiNodeClass():
 
 	# class attributes
-	max_translational_speed = 5*3 # in [m/s]
-	max_rotational_speed = 10*2 # in [rad/s]
+	max_translational_speed = 5*5 # in [m/s]
+	max_rotational_speed = 10*5 # in [rad/s]
 	max_arms_rotational_speed = 0.52 # in [rad/s]
 
 	# how to obtain these values? see Mandow et al. COMPLETE THIS REFERENCE
@@ -34,7 +37,11 @@ class RosiNodeClass():
 		self.arm_front_rotSpeed = 0
 		self.arm_rear_rotSpeed = 0
 		self.camera_image = None
+		self.camera_image_depth = None
 		self.bridge = CvBridge()
+		self.velodyneOut = None
+		self.hokuyoOut = None
+		#self.time = 0
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -50,7 +57,16 @@ class RosiNodeClass():
 		self.sub_joy = rospy.Subscriber('/joy', Joy, self.callback_Joy)
 
 		# kinect_rgb subscriber
-		self.sub_kinect = rospy.Subscriber('/sensor/kinect_rgb', Image, self.callback_kinect)
+		self.sub_kinect_rgb = rospy.Subscriber('/sensor/kinect_rgb', Image, self.callback_kinect_rgb)
+
+		# kinect_depth subscriber
+		self.sub_kinect_depth = rospy.Subscriber('/sensor/kinect_depth', Image, self.callback_kinect_depth)
+
+		# velodyne subscriber
+		self.sub_velodyne = rospy.Subscriber('/sensor/velodyne', PointCloud, self.callback_velodyne)
+
+		# hokuyo subscriber
+		self.sub_hokuyo = rospy.Subscriber('/sensor/hokuyo', HokuyoReading, self.callback_hokuyo)
 
 		# defining the eternal loop frequency
 		node_sleep_rate = rospy.Rate(10)
@@ -160,7 +176,7 @@ class RosiNodeClass():
 			self.arm_rear_rotSpeed = self.max_arms_rotational_speed * trigger_left
 	
 	# kinect callback function
-	def callback_kinect(self, msg):
+	def callback_kinect_rgb(self, msg):
 		#rospy.loginfo("Test Image Callback")
 		self.camera_image = msg
 		try:
@@ -171,12 +187,45 @@ class RosiNodeClass():
 		img_out = cv2.resize(img_out, None, fx=.5, fy=.5)
 		img_out = cv2.flip(img_out, 1)
 		gray = cv2.cvtColor(img_out, cv2.COLOR_BGR2GRAY)
-		cv2.imshow("ROSI Cam rgb", img_out)
-		cv2.imshow("ROSI Cam gray", gray)
+		#cv2.imshow("ROSI Cam rgb", img_out)
+		#cv2.imshow("ROSI Cam gray", gray)
+		#cv2.waitKey(1)
+		return None
+
+	# kinect callback function
+	def callback_kinect_depth(self, msg):
+		#rospy.loginfo("Test Image Callback")
+		self.camera_image_depth = msg
+		try:
+			cv_image_depth = self.bridge.imgmsg_to_cv2(self.camera_image_depth, "rgb8")
+		except CvBridgeError as e:
+ 			print(e)
+		img_out_depth = cv2.cvtColor(cv_image_depth, cv2.COLOR_RGB2BGR)
+		img_out_depth = cv2.resize(img_out_depth, None, fx=.5, fy=.5)
+		img_out_depth = cv2.flip(img_out_depth, 1)
+		gray_depth = cv2.cvtColor(img_out_depth, cv2.COLOR_BGR2GRAY)
+		cv2.imshow("ROSI Cam depth", img_out_depth)
+		cv2.imshow("ROSI Cam gray_depth", gray_depth)
 		cv2.waitKey(1)
 		return None
 
-		
+	# velodyne callback function
+	def callback_velodyne(self, msg):
+		#rospy.loginfo("Test Velodyne Callback")
+		self.velodyneOut = msg
+		points = [[p.x, p.y, p.z, 1] for p in self.velodyneOut.points]
+		return None
+
+	# hokuyo callback function
+	#https://www.youtube.com/watch?v=RFNNsDI2b6c
+	def callback_hokuyo(self, msg):
+		#rospy.loginfo("Test Hokuyo Callback")
+		#self.hokuyoOut = msg
+		#self.time = self.time + 1;
+		print(msg.reading[0]) # We have 135 points: from 0 to 134
+		#print(self.time)
+		return None
+	
 	# ---- Support Methods --------
 
 	# -- Method for compute the skid-steer A kinematic matrix
