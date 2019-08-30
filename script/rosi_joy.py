@@ -14,6 +14,11 @@ import numpy as np
 from sensor_msgs.msg import PointCloud
 from rosi_defy.msg import HokuyoReading
 
+import os
+import os.path
+
+current_directory = os.getcwd()
+
 class RosiNodeClass():
 
 	# class attributes
@@ -42,7 +47,12 @@ class RosiNodeClass():
 		self.velodyneOut = None
 		self.hokuyoOut = None
 		self.robotMovement = None
-		#self.time = 0
+		self.tractionCommand = None
+		self.countImageDepth = 0
+		self.countImageRGB = 0
+		self.flag = "w"
+		self.velodyne = None
+		self.save_image_flag = False #Flag to save image
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -128,6 +138,27 @@ class RosiNodeClass():
 		# enter in rospy spin
 		#rospy.spin()
 
+	# Save image to a folder
+	def save_image(self, folder, frame, countImage):
+		height,width = frame.shape[0],frame.shape[1] #get width and height of the images 
+		rgb = np.empty((height,width,3),np.uint8) 
+		path = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script'+str('/')+folder # Replace with your path folder
+		print(path)
+		file_name = folder+'_'+str(countImage)+'.jpg'
+		file_to_save = os.path.join(path,file_name)    
+		cv2.imwrite(os.path.join(path,file_to_save), rgb)
+		return None
+
+	def save_command(self, count, data, saveToFile):
+		flagW = "w"
+		flagA = "a"		
+		file1 = open("/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/robotCommands/"+saveToFile, self.flag) # Replace with your path folder
+		file1.write(str(self.countImageRGB) + "," + str(data)+"\n") 
+		if self.flag == flagW:
+			self.flag = flagA
+		file1.close()
+		return None
+
 	# joystick callback function
 	def callback_Joy(self, msg):
 		#rospy.loginfo("Joy Test")
@@ -138,6 +169,12 @@ class RosiNodeClass():
 		trigger_right = msg.axes[3]
 		button_L = msg.buttons[4]
 		button_R = msg.buttons[5]
+		record = msg.buttons[10]
+
+		if record == 1:
+			self.save_image_flag = True
+		if record == 0:
+			self.save_image_flag = False
 
 		# Treats axes deadband
 		if axes_lin < 0.15 and axes_lin > -0.15:
@@ -190,10 +227,15 @@ class RosiNodeClass():
 		img_out = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
 		img_out = cv2.resize(img_out, None, fx=.5, fy=.5)
 		img_out = cv2.flip(img_out, 1)
-		gray = cv2.cvtColor(img_out, cv2.COLOR_BGR2GRAY)
+		#gray = cv2.cvtColor(img_out, cv2.COLOR_BGR2GRAY)
 		#cv2.imshow("ROSI Cam rgb", img_out)
 		#cv2.imshow("ROSI Cam gray", gray)
-		#cv2.waitKey(1)
+		if self.save_image_flag:
+			self.countImageRGB = self.countImageRGB+1
+			self.save_image('rgb_data', img_out, self.countImageRGB)
+			self.save_command(self.countImageRGB, self.tractionCommand, "commands")
+			#self.save_command(self.countImageRGB, self.velodyne, "velodyne/velodyne")
+		cv2.waitKey(1)
 		return None
 
 	# kinect callback function
@@ -207,9 +249,12 @@ class RosiNodeClass():
 		img_out_depth = cv2.cvtColor(cv_image_depth, cv2.COLOR_RGB2BGR)
 		img_out_depth = cv2.resize(img_out_depth, None, fx=.5, fy=.5)
 		img_out_depth = cv2.flip(img_out_depth, 1)
-		gray_depth = cv2.cvtColor(img_out_depth, cv2.COLOR_BGR2GRAY)
-		cv2.imshow("ROSI Cam depth", img_out_depth)
-		cv2.imshow("ROSI Cam gray_depth", gray_depth)
+		#gray_depth = cv2.cvtColor(img_out_depth, cv2.COLOR_BGR2GRAY)
+		#cv2.imshow("ROSI Cam depth", img_out_depth)
+		#cv2.imshow("ROSI Cam gray_depth", gray_depth)
+		if self.save_image_flag:
+			self.countImageDepth = self.countImageDepth+1
+			self.save_image('depth_data', img_out_depth, self.countImageDepth)
 		cv2.waitKey(1)
 		return None
 
@@ -218,6 +263,8 @@ class RosiNodeClass():
 		#rospy.loginfo("Test Velodyne Callback")
 		self.velodyneOut = msg
 		points = [[p.x, p.y, p.z, 1] for p in self.velodyneOut.points]
+		self.velodyne = points
+		#print(self.velodyneOut)
 		return None
 
 	# hokuyo callback function
@@ -232,7 +279,8 @@ class RosiNodeClass():
 		#rospy.loginfo("Test traction_speed Callback")
 		self.robotMovement = msg
 		movement_array = [[p.joint_var] for p in self.robotMovement.movement_array]
-		print(movement_array)		
+		self.tractionCommand = movement_array
+		#print(self.tractionCommand)		
 		#print(self.robotMovement.movement_array[0])
 		return None
 
