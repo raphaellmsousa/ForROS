@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python2.7
 import rospy
 import numpy as np
 from rosi_defy.msg import RosiMovement
@@ -6,6 +6,8 @@ from rosi_defy.msg import RosiMovementArray
 from rosi_defy.msg import ManipulatorJoints
 from sensor_msgs.msg import Joy
 from sensor_msgs.msg import Image
+from std_msgs.msg import Float32
+
 
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
@@ -19,11 +21,15 @@ import os.path
 
 import csv
 
+from keras.models import load_model
+#model = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/model.h5')
+#model._make_predict_function()
+
 class RosiNodeClass():
 
 	# class attributes
-	max_translational_speed = 5*5 # in [m/s]
-	max_rotational_speed = 10*5 # in [rad/s]
+	max_translational_speed = 5*6 # in [m/s]
+	max_rotational_speed = 10*7 # in [rad/s]
 	max_arms_rotational_speed = 0.52 # in [rad/s]
 
 	# how to obtain these values? see Mandow et al. COMPLETE THIS REFERENCE
@@ -53,7 +59,11 @@ class RosiNodeClass():
 		self.flag = "w"
 		self.velodyne = None
 		self.save_image_flag = False #Flag to save image
-
+		self.steering_angle = None
+		self.autoModeStart = False
+		self.countHokuyo = 0
+		self.mediaVector = 0
+		
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
 
@@ -63,6 +73,8 @@ class RosiNodeClass():
 		# registering to publishers
 		self.pub_traction = rospy.Publisher('/rosi/command_traction_speed', RosiMovementArray, queue_size=1)
 		self.pub_arm = rospy.Publisher('/rosi/command_arms_speed', RosiMovementArray, queue_size=1)
+		self.pub_kinect_joint = rospy.Publisher('/rosi/command_kinect_joint', Float32, queue_size=1)
+		self.pub_jointsCommand = rospy.Publisher('/ur5/jointsPosTargetCommand', ManipulatorJoints, queue_size=1)
 
 		# registering to subscribers
 		self.sub_joy = rospy.Subscriber('/joy', Joy, self.callback_Joy)
@@ -90,6 +102,7 @@ class RosiNodeClass():
 
 			arm_command_list = RosiMovementArray()
 			traction_command_list = RosiMovementArray()
+			arm_joint_list = ManipulatorJoints()
 
 			# mounting the lists
 			for i in range(4):
@@ -100,11 +113,21 @@ class RosiNodeClass():
 				# mount traction command list
 				traction_command.nodeID = i+1
 
-				# separates each traction side command
-				if i < 2:
-					traction_command.joint_var = self.omega_right
-				else:
-					traction_command.joint_var = self.omega_left
+				if self.autoModeStart == True:
+					#print("Autonomous mode running...")
+					# separates each traction side command
+					if i < 2 and self.steering_angle is not None:
+						traction_command.joint_var = self.steering_angle[0][i] #self.omega_right  
+
+					if i >= 2 and self.steering_angle is not None:
+						traction_command.joint_var = self.steering_angle[0][i] #self.omega_left 
+
+				if self.autoModeStart == False:
+					# separates each traction side command
+					if i < 2:
+						traction_command.joint_var = self.omega_right
+					else:
+						traction_command.joint_var = self.omega_left
 
 				# appending the command to the list
 				traction_command_list.movement_array.append(traction_command)
@@ -124,10 +147,25 @@ class RosiNodeClass():
 				# appending the command to the list
 				arm_command_list.movement_array.append(arm_command)
 
+				arm_joint_command = RosiMovement()
+
+			for i in range(6):
+				# separates each arm side command
+				if i == 0:
+					arm_joint_command = 3.14 #180 graus
+				else:
+					arm_joint_command = 0
+
+				# appending the command to the list for the arm
+				arm_joint_list.joint_variable.append(arm_joint_command)
+
 			# publishing
 			self.pub_arm.publish(arm_command_list)		
 			self.pub_traction.publish(traction_command_list)
-
+			self.pub_kinect_joint.publish()  # -45 < theta < 45 (graus)
+			self.pub_jointsCommand.publish(arm_joint_list)  
+			#print(arm_joint_list)
+			
 			# sleeps for a while
 			node_sleep_rate.sleep()
 
@@ -153,12 +191,17 @@ class RosiNodeClass():
 		path_to_image_depth = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/'+image_depth+'/'
 		path_to_folder = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/robotCommands/'
 		with open(path_to_folder+"driving_log.csv", 'a') as csvfile:
-    			filewriter = csv.writer(csvfile, delimiter=',',
-                            			quotechar='|', quoting=csv.QUOTE_MINIMAL)
+			filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
 			file_name = path_to_image+image+'_'+str(count)+'.jpg'
 			file_name_depth = path_to_image_depth+image_depth+'_'+str(count)+'.jpg'
-     			filewriter.writerow([path_to_image+file_name, path_to_image_depth+file_name_depth,self.tractionCommand[0][0], 						self.tractionCommand[0][0], self.tractionCommand[1][0], self.tractionCommand[2][0], 							self.tractionCommand[3][0]])
+			filewriter.writerow([path_to_image+file_name, path_to_image_depth+file_name_depth, self.tractionCommand[0][0], 						self.tractionCommand[0][0], self.tractionCommand[1][0], self.tractionCommand[2][0], 							self.tractionCommand[3][0], self.mediaVector])
 		return None
+
+	def preprocess(self, img):
+		image = cv2.GaussianBlur(img, (3,3), 0)
+		image = cv2.resize(image, (64,64), interpolation=cv2.INTER_AREA)
+		proc_img = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)	# cv2 loads images as BGR
+		return proc_img
 
 	# joystick callback function
 	def callback_Joy(self, msg):
@@ -171,13 +214,18 @@ class RosiNodeClass():
 		button_L = msg.buttons[4]
 		button_R = msg.buttons[5]
 		record = msg.buttons[10]
+		autoMode = msg.buttons[9]
 
 		if record == 1:
 			self.save_image_flag = True
 			print("Recording data...")
 		if record == 0:
 			self.save_image_flag = False
-			print("Stop recording data!")
+			#print("Stop recording data!")
+		if autoMode == 1:
+			self.autoModeStart = True
+		if autoMode == 0:
+			self.autoModeStart = False
 
 		# Treats axes deadband
 		if axes_lin < 0.15 and axes_lin > -0.15:
@@ -228,11 +276,16 @@ class RosiNodeClass():
 		except CvBridgeError as e:
  			print(e)
 		img_out = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
-		img_out = cv2.resize(img_out, None, fx=.5, fy=.5)
+		img_out = cv2.resize(img_out, None, fx=.6, fy=.6)
 		img_out = cv2.flip(img_out, 1)
 		#gray = cv2.cvtColor(img_out, cv2.COLOR_BGR2GRAY)
-		#cv2.imshow("ROSI Cam rgb", img_out)
+		cv2.imshow("ROSI Cam rgb", img_out)
 		#cv2.imshow("ROSI Cam gray", gray)
+		image_array = np.asarray(img_out)
+		img_out_preprocessed = self.preprocess(image_array)
+		if self.autoModeStart == True:
+			self.steering_angle = model.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
+			print(self.steering_angle)
 		if self.save_image_flag:
 			self.countImageRGB = self.countImageRGB+1
 			self.save_image('rgb_data', img_out, self.countImageRGB)
@@ -275,7 +328,16 @@ class RosiNodeClass():
 	def callback_hokuyo(self, msg):
 		#rospy.loginfo("Test Hokuyo Callback")
 		self.hokuyoOut = msg
-		#print(self.hokuyoOut.reading[0]) # We have 135 points: from 0 to 134
+		vectorSize = len(self.hokuyoOut.reading)
+		sumVector = 0
+		for i in range(vectorSize):
+			sumVector = sumVector + abs(self.hokuyoOut.reading[i])
+		self.mediaVector = sumVector/vectorSize
+		#print(self.hokuyoOut)
+		print(self.mediaVector)	
+		#print(self.hokuyoOut.reading[self.countHokuyo]) 
+		#print(self.countHokuyo)
+		#self.countHokuyo = self.countHokuyo + 1
 		return None
 	
 	def callback_traction_speed(self, msg):
