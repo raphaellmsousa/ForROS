@@ -339,10 +339,9 @@ class RosiNodeClass():
 		img_out = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
 		img_out = cv2.resize(img_out, None, fx=.6, fy=.6)
 		img_out = cv2.flip(img_out, 1)
-		#templist = ['/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/fire1.jpg']
-		#bboxes = self.find_matches(img_out, templist)
-		#print(bboxes)
-		#img_out = self.draw_boxes(img_out, bboxes)
+		templist = ['/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/fire1.jpg']
+		bboxes = self.find_matches(img_out, templist)
+		img_out = self.draw_boxes(img_out, bboxes)
 		#gray = cv2.cvtColor(img_out, cv2.COLOR_BGR2GRAY)
 		cv2.imshow("ROSI Cam rgb", img_out)
 		#cv2.imshow("ROSI Cam gray", gray)
@@ -350,7 +349,7 @@ class RosiNodeClass():
 		img_out_preprocessed = self.preprocess(image_array)
 		if self.autoModeStart == True:
 			self.steering_angle = model.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
-			print(self.steering_angle)
+			#print(self.steering_angle)
 		if self.save_image_flag:
 			self.countImageRGB = self.countImageRGB+1
 			self.save_image('rgb_data', img_out, self.countImageRGB)
