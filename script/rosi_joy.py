@@ -33,6 +33,8 @@ model._make_predict_function()
 ##################################################################################
 # Press button 10 (depends on your control configuration) to record data
 # Press button 9 keep pressing to running the model 
+# Tensorflow version 1.14.0
+# Keras version 2.2.5
 
 class RosiNodeClass():
 
