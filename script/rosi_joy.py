@@ -275,7 +275,7 @@ class RosiNodeClass():
 		button_L = msg.buttons[4]
 		button_R = msg.buttons[5]
 		record = msg.buttons[10]
-		autoMode = 1#msg.buttons[9]
+		autoMode = msg.buttons[9]
 
 		if record == 1:
 			self.save_image_flag = True
