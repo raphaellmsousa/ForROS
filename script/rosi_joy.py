@@ -1,4 +1,7 @@
 #!/usr/bin/env python2.7
+# ROSI Challenge
+# 09/2019
+# Team: ForROS
 import rospy
 import numpy as np
 from rosi_defy.msg import RosiMovement
@@ -23,13 +26,13 @@ import csv
 
 from keras.models import load_model
 ##################################################################################
-#                          Uncomment do use the model
+#                          Uncomment to use the model
 ##################################################################################
 model = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/model.h5')
 model._make_predict_function()
 
 ##################################################################################
-#                          Instructons
+#                          Instructions
 ##################################################################################
 # Press button 10 (depends on your control configuration) to record data
 # Press button 9 keep pressing to running the model 
