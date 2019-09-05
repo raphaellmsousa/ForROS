@@ -22,8 +22,17 @@ import os.path
 import csv
 
 from keras.models import load_model
-#model = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/model.h5')
-#model._make_predict_function()
+##################################################################################
+#                          Uncomment do use the model
+##################################################################################
+model = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/model.h5')
+model._make_predict_function()
+
+##################################################################################
+#                          Instructons
+##################################################################################
+# Press button 10 (depends on your control configuration) to record data
+# Press button 9 keep pressing to running the model 
 
 class RosiNodeClass():
 
@@ -176,6 +185,53 @@ class RosiNodeClass():
 		# enter in rospy spin
 		#rospy.spin()
 
+	# Here is your draw_boxes function from the previous exercise
+	def draw_boxes(self, img, bboxes, color=(0, 0, 255), thick=1):
+	    # Make a copy of the image
+	    imcopy = np.copy(img)
+	    # Iterate through the bounding boxes
+	    for bbox in bboxes:
+	        # Draw a rectangle given bbox coordinates
+        	cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
+	    # Return the image copy with boxes drawn
+	    return imcopy
+    
+    
+	# Define a function to search for template matches
+	# and return a list of bounding boxes
+	def find_matches(self, img, template_list):
+    	# Define an empty list to take bbox coords
+	    bbox_list = []
+	    # Define matching method
+	    # Other options include: cv2.TM_CCORR_NORMED', 'cv2.TM_CCOEFF', 'cv2.TM_CCORR',
+	    #         'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED'
+	    method = cv2.TM_CCOEFF_NORMED
+	    # Iterate through template list
+	    for temp in template_list:
+        	# Read in templates one by one
+        	tmp = cv2.imread(temp)
+        	# Use cv2.matchTemplate() to search the image
+        	result = cv2.matchTemplate(img, tmp, method)
+		threshold = 0.9
+		loc = np.where( result >= threshold) 
+		if loc:
+        		# Use cv2.minMaxLoc() to extract the location of the best match
+        		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+		else:
+			pass
+        	# Determine a bounding box for the match
+        	w, h = (tmp.shape[1], tmp.shape[0])
+        	if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
+        	    top_left = min_loc
+        	else:
+        	    top_left = max_loc
+        	bottom_right = (top_left[0] + w, top_left[1] + h)
+        	# Append bbox position to list
+        	bbox_list.append((top_left, bottom_right))
+        	# Return the list of bounding boxes
+        
+	    return bbox_list
+
 	# Save image to a folder
 	def save_image(self, folder, frame, countImage):
 		height,width = frame.shape[0],frame.shape[1] #get width and height of the images 
@@ -188,13 +244,13 @@ class RosiNodeClass():
 
 	def save_command_csv(self, count, image, image_depth):
 		path_to_image = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/'+image+'/'
-		path_to_image_depth = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/'+image_depth+'/'
-		path_to_folder = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/robotCommands/'
+		path_to_image_depth = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/'+image_depth+'/' # Replace with your path folder
+		path_to_folder = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/robotCommands/'        # Replace with your path folder
 		with open(path_to_folder+"driving_log.csv", 'a') as csvfile:
 			filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
 			file_name = path_to_image+image+'_'+str(count)+'.jpg'
 			file_name_depth = path_to_image_depth+image_depth+'_'+str(count)+'.jpg'
-			filewriter.writerow([path_to_image+file_name, path_to_image_depth+file_name_depth, self.tractionCommand[0][0], 						self.tractionCommand[0][0], self.tractionCommand[1][0], self.tractionCommand[2][0], 							self.tractionCommand[3][0], self.mediaVector])
+			filewriter.writerow([path_to_image+file_name, path_to_image_depth+file_name_depth, self.tractionCommand[0][0], 								self.tractionCommand[1][0], self.tractionCommand[2][0], 							self.tractionCommand[3][0]])#, self.mediaVector])
 		return None
 
 	def preprocess(self, img):
@@ -214,7 +270,7 @@ class RosiNodeClass():
 		button_L = msg.buttons[4]
 		button_R = msg.buttons[5]
 		record = msg.buttons[10]
-		autoMode = msg.buttons[9]
+		autoMode = 1#msg.buttons[9]
 
 		if record == 1:
 			self.save_image_flag = True
@@ -278,6 +334,10 @@ class RosiNodeClass():
 		img_out = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
 		img_out = cv2.resize(img_out, None, fx=.6, fy=.6)
 		img_out = cv2.flip(img_out, 1)
+		#templist = ['/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/fire1.jpg']
+		#bboxes = self.find_matches(img_out, templist)
+		#print(bboxes)
+		#img_out = self.draw_boxes(img_out, bboxes)
 		#gray = cv2.cvtColor(img_out, cv2.COLOR_BGR2GRAY)
 		cv2.imshow("ROSI Cam rgb", img_out)
 		#cv2.imshow("ROSI Cam gray", gray)
