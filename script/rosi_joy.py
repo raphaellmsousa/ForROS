@@ -190,6 +190,23 @@ class RosiNodeClass():
 		# enter in rospy spin
 		#rospy.spin()
 
+	def color_detection(self, img):
+		light_color = (39, 255, 255)
+		dark_color = (23, 100, 100)
+		hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+		mask = cv2.inRange(hsv_img, dark_color, light_color)
+		result = cv2.bitwise_and(img, img, mask=mask)
+		kernel_size = 5
+		result = cv2.GaussianBlur(result,(kernel_size, kernel_size), 0)
+		_, contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)	
+		for contour in contours:
+		        cv2.drawContours(img, contour, -1, (0, 0, 255), 2)	
+			print("Take care, fire detected!!")
+		#cv2.imshow("ROSI Color Detection", img)
+		#cv2.waitKey(1)
+		return None
+
+
 	def move_arm_joint(self, theta, joint):
 		grausTorad = 0.0174
 		angInRad = theta*grausTorad
@@ -227,18 +244,21 @@ class RosiNodeClass():
 	    for temp in template_list:
         	# Read in templates one by one
         	tmp = cv2.imread(temp)
+		color_select = np.copy(img)
+		color_select[:,:,0] = 0
+		color_select[:,:,1] = 0 
 		img = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+		#color_select_HLS_S = img[:,:,2]		
 		img[:,:,0] = 0
 		img[:,:,1] = 0 
-		#cv2.imshow("test", img)
+		final = img * (color_select)
+		#cv2.imshow("test", final)
         	# Use cv2.matchTemplate() to search the image
-        	result = cv2.matchTemplate(img, tmp, method)
-		threshold = 0.24
+        	result = cv2.matchTemplate(final, tmp, method)
+		threshold = 0.3
        		# Use cv2.minMaxLoc() to extract the location of the best match
-		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-
+		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)		
 		if abs(min_val) >= threshold:
-			#print("match")
 	        	# Determine a bounding box for the match
 	        	w, h = (tmp.shape[1], tmp.shape[0])
 	        	if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
@@ -357,14 +377,15 @@ class RosiNodeClass():
 		img_out = cv2.resize(img_out, None, fx=.6, fy=.6)
 		img_out = cv2.flip(img_out, 1)
 		y=0
-		x=200
+		x=0
 		h=200
-		w=640
+		w=200
 		crop = img_out[y:y+h, x:x+w]
 		templist = ['/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/fireRed.jpg']
-		bboxes = self.find_matches(crop, templist)
-		img_out_crop = self.draw_boxes(crop, bboxes)
-		cv2.imshow("ROSI Cam crop", img_out_crop)
+		#bboxes = self.find_matches(crop, templist)
+		#img_out_crop = self.draw_boxes(crop, bboxes)
+		#cv2.imshow("ROSI Cam crop", img_out_crop)
+		self.color_detection(img_out)
 		cv2.imshow("ROSI Cam RGB", img_out)
 		image_array = np.asarray(img_out)
 		img_out_preprocessed = self.preprocess(image_array)
