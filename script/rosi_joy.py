@@ -77,7 +77,8 @@ class RosiNodeClass():
 		self.autoModeStart = False
 		self.countHokuyo = 0
 		self.mediaVector = 0
-		
+		self.moveArm = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
 
@@ -163,20 +164,19 @@ class RosiNodeClass():
 
 				arm_joint_command = RosiMovement()
 
-			for i in range(6):
-				# separates each arm side command
-				if i == 0:
-					arm_joint_command = 3.14 #180 graus
-				else:
-					arm_joint_command = 0
+			'''
+			thetaJoint = 180 #in deg
+			amrJoint = 0 # from 0 to 5			
+			arm_joint_list.joint_variable = self.move_arm_joint(thetaJoint, amrJoint)
+			'''
 
-				# appending the command to the list for the arm
-				arm_joint_list.joint_variable.append(arm_joint_command)
+			thetaAll = [180.0, 0.0, 0.0, 0.0, 0.0, 0.0] # in deg
+			arm_joint_list.joint_variable = self.move_arm_all(thetaAll)			
 
 			# publishing
 			self.pub_arm.publish(arm_command_list)		
 			self.pub_traction.publish(traction_command_list)
-			self.pub_kinect_joint.publish()  # -45 < theta < 45 (graus)
+			#self.pub_kinect_joint.publish(.1)  # -45 < theta < 45 (graus)
 			self.pub_jointsCommand.publish(arm_joint_list)  
 			#print(arm_joint_list)
 			
@@ -190,8 +190,20 @@ class RosiNodeClass():
 		# enter in rospy spin
 		#rospy.spin()
 
+	def move_arm_joint(self, theta, joint):
+		grausTorad = 0.0174
+		angInRad = theta*grausTorad
+		self.moveArm[joint] = angInRad
+		return self.moveArm
+
+	def move_arm_all(self, theta):
+		grausTorad = 0.0174
+		for i in range(len(theta)):
+			theta[i] = theta[i]*grausTorad
+		return theta
+
 	# Here is your draw_boxes function from the previous exercise
-	def draw_boxes(self, img, bboxes, color=(0, 0, 255), thick=1):
+	def draw_boxes(self, img, bboxes, color=(0, 255, 0), thick=2):
 	    # Make a copy of the image
 	    imcopy = np.copy(img)
 	    # Iterate through the bounding boxes
@@ -215,25 +227,30 @@ class RosiNodeClass():
 	    for temp in template_list:
         	# Read in templates one by one
         	tmp = cv2.imread(temp)
+		img = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+		img[:,:,0] = 0
+		img[:,:,1] = 0 
+		#cv2.imshow("test", img)
         	# Use cv2.matchTemplate() to search the image
         	result = cv2.matchTemplate(img, tmp, method)
-		threshold = 0.9
-		loc = np.where( result >= threshold) 
-		if loc:
-        		# Use cv2.minMaxLoc() to extract the location of the best match
-        		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-		else:
+		threshold = 0.24
+       		# Use cv2.minMaxLoc() to extract the location of the best match
+		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+
+		if abs(min_val) >= threshold:
+			#print("match")
+	        	# Determine a bounding box for the match
+	        	w, h = (tmp.shape[1], tmp.shape[0])
+	        	if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
+	        	    top_left = min_loc
+	        	else:
+	        	    top_left = max_loc
+	        	bottom_right = (top_left[0] + w, top_left[1] + h)
+	        	# Append bbox position to list
+	        	bbox_list.append((top_left, bottom_right))
+	        	# Return the list of bounding boxes
+		if abs(min_val) <= threshold:
 			pass
-        	# Determine a bounding box for the match
-        	w, h = (tmp.shape[1], tmp.shape[0])
-        	if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
-        	    top_left = min_loc
-        	else:
-        	    top_left = max_loc
-        	bottom_right = (top_left[0] + w, top_left[1] + h)
-        	# Append bbox position to list
-        	bbox_list.append((top_left, bottom_right))
-        	# Return the list of bounding boxes
         
 	    return bbox_list
 
@@ -275,7 +292,7 @@ class RosiNodeClass():
 		button_L = msg.buttons[4]
 		button_R = msg.buttons[5]
 		record = msg.buttons[10]
-		autoMode = msg.buttons[9]
+		autoMode = 1#msg.buttons[9]
 
 		if record == 1:
 			self.save_image_flag = True
@@ -339,12 +356,16 @@ class RosiNodeClass():
 		img_out = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
 		img_out = cv2.resize(img_out, None, fx=.6, fy=.6)
 		img_out = cv2.flip(img_out, 1)
-		templist = ['/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/fire1.jpg']
-		bboxes = self.find_matches(img_out, templist)
-		img_out = self.draw_boxes(img_out, bboxes)
-		#gray = cv2.cvtColor(img_out, cv2.COLOR_BGR2GRAY)
-		cv2.imshow("ROSI Cam rgb", img_out)
-		#cv2.imshow("ROSI Cam gray", gray)
+		y=0
+		x=200
+		h=200
+		w=640
+		crop = img_out[y:y+h, x:x+w]
+		templist = ['/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/fireRed.jpg']
+		bboxes = self.find_matches(crop, templist)
+		img_out_crop = self.draw_boxes(crop, bboxes)
+		cv2.imshow("ROSI Cam crop", img_out_crop)
+		cv2.imshow("ROSI Cam RGB", img_out)
 		image_array = np.asarray(img_out)
 		img_out_preprocessed = self.preprocess(image_array)
 		if self.autoModeStart == True:
@@ -398,7 +419,7 @@ class RosiNodeClass():
 			sumVector = sumVector + abs(self.hokuyoOut.reading[i])
 		self.mediaVector = sumVector/vectorSize
 		#print(self.hokuyoOut)
-		print(self.mediaVector)	
+		#print(self.mediaVector)	
 		#print(self.hokuyoOut.reading[self.countHokuyo]) 
 		#print(self.countHokuyo)
 		#self.countHokuyo = self.countHokuyo + 1
