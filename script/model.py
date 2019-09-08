@@ -26,13 +26,15 @@ from keras.layers.pooling import MaxPooling2D
 
 from keras.models import load_model
 
+from keras.callbacks import EarlyStopping, ModelCheckpoint
+
 # Load data for training ############################################################################
 
+#model = load_model('model.h5')
+
 samples = []
-#PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/left_side/robotCommands/driving_log.csv'
-#PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/left_side/rgb_data/'
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t4/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t4/rgb_data/'
+PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/5voltas/robotCommands/driving_log.csv'
+PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/5voltas/rgb_data/'
 
 lines = []
 with open(PATH_log) as csvfile:
@@ -98,43 +100,19 @@ model.add(Dense(50))
 model.add(Dense(10))
 model.add(Dense(4))
 
-#model.summary()
+model.summary()
+
+# Set callback functions to early stop training and save the best model so far
+callbacks = [EarlyStopping(monitor='val_loss', patience=2),
+             ModelCheckpoint(filepath='best_model.h5', monitor='val_loss', save_best_only=True)]
 
 # Training model using adam optimizer
 model.compile(loss='mse', optimizer='adam')
 
 #model.compile(optimizer='adam', loss='mse')
-model.fit(np.array(X_train), y_train, validation_split = 0.2, shuffle = True, epochs = 20)
+model.fit(np.array(X_train), y_train, validation_split = 0.1, shuffle = True, epochs = 10, callbacks=callbacks)
 
 model.save('model.h5')
-
-# Load data for training ############################################################################
-
-# Load trained model for a new data set
-#model = load_model('model.h5')
-
-#samples = []
-#PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/corredor/robotCommands/driving_log.csv'
-#PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/corredor/rgb_data/'
-
-#lines = []
-#with open(PATH_log) as csvfile:
-#    reader = csv.reader(csvfile)
-#    for line in reader:
-#        lines.append(line)
-
-#X_train, y_train = load_img()
-
-#X_train = np.array(X_train)
-#y_train = np.array(y_train)
-
-## Training model using adam optimizer
-#model.compile(loss='mse', optimizer='adam')
-
-#model.compile(optimizer='adam', loss='mse')
-#model.fit(np.array(X_train), y_train, validation_split = 0.2, shuffle = True, epochs = 3)
-
-#model.save('model.h5')
 
 #############################################################################################################################################
 
@@ -142,8 +120,8 @@ model.save('model.h5')
 model = load_model('model.h5')
 
 samples = []
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t3/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t3/rgb_data/'
+PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/5voltas/robotCommands/driving_log.csv'
+PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/5voltas/rgb_data/'
 
 lines = []
 with open(PATH_log) as csvfile:
@@ -160,18 +138,18 @@ y_train = np.array(y_train)
 model.compile(loss='mse', optimizer='adam')
 
 model.compile(optimizer='adam', loss='mse')
-model.fit(np.array(X_train), y_train, validation_split = 0.2, shuffle = True, epochs = 3)
+model.fit(np.array(X_train), y_train, validation_split = 0.2, shuffle = True, epochs = 5, callbacks=callbacks)
 
 model.save('model.h5')
 
 #############################################################################################################################################
-
+'''
 # Load trained model for a new data set
 model = load_model('model.h5')
 
 samples = []
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t2/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t2/rgb_data/'
+PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t10/robotCommands/driving_log.csv'
+PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t10/rgb_data/'
 
 lines = []
 with open(PATH_log) as csvfile:
@@ -188,10 +166,62 @@ y_train = np.array(y_train)
 model.compile(loss='mse', optimizer='adam')
 
 model.compile(optimizer='adam', loss='mse')
-model.fit(np.array(X_train), y_train, validation_split = 0.2, shuffle = True, epochs = 3)
+model.fit(np.array(X_train), y_train, validation_split = 0.1, shuffle = True, epochs = 3, callbacks=callbacks)
 
 model.save('model.h5')
+'''
+#############################################################################################################################################
+'''
+# Load trained model for a new data set
+model = load_model('model.h5')
 
+samples = []
+PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t12/robotCommands/driving_log.csv'
+PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t12/rgb_data/'
+
+lines = []
+with open(PATH_log) as csvfile:
+    reader = csv.reader(csvfile)
+    for line in reader:
+        lines.append(line)
+
+X_train, y_train = load_img()
+
+X_train = np.array(X_train)
+y_train = np.array(y_train)
+
+## Training model using adam optimizer
+model.compile(loss='mse', optimizer='adam')
+
+model.compile(optimizer='adam', loss='mse')
+model.fit(np.array(X_train), y_train, validation_split = 0.1, shuffle = True, epochs = 5, callbacks=callbacks)
+
+model.save('model.h5')
+'''
 #############################################################################################################################################
 
+# Load trained model for a new data set
+model = load_model('model.h5')
 
+samples = []
+PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t11/robotCommands/driving_log.csv'
+PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t11/rgb_data/'
+
+lines = []
+with open(PATH_log) as csvfile:
+    reader = csv.reader(csvfile)
+    for line in reader:
+        lines.append(line)
+
+X_train, y_train = load_img()
+
+X_train = np.array(X_train)
+y_train = np.array(y_train)
+
+## Training model using adam optimizer
+model.compile(loss='mse', optimizer='adam')
+
+model.compile(optimizer='adam', loss='mse')
+model.fit(np.array(X_train), y_train, validation_split = 0.1, shuffle = True, epochs = 5, callbacks=callbacks)
+
+model.save('model.h5')
