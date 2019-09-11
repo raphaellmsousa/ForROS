@@ -42,8 +42,8 @@ model._make_predict_function()
 class RosiNodeClass():
 
 	# class attributes
-	max_translational_speed = 5*6 # in [m/s]
-	max_rotational_speed = 10*7 # in [rad/s]
+	max_translational_speed = 5*20 # in [m/s]
+	max_rotational_speed = 10*4 # in [rad/s]
 	max_arms_rotational_speed = 0.52 # in [rad/s]
 
 	# how to obtain these values? see Mandow et al. COMPLETE THIS REFERENCE
@@ -78,6 +78,12 @@ class RosiNodeClass():
 		self.countHokuyo = 0
 		self.mediaVector = 0
 		self.moveArm = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+		self.camera_image_arm = None
+		self.img_out_arm = None
+		self.rgbOut = None
+		self.concatImage = None
+		self.contStart = 0
+		self.offset = 3393
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -97,17 +103,11 @@ class RosiNodeClass():
 		# kinect_rgb subscriber
 		self.sub_kinect_rgb = rospy.Subscriber('/sensor/kinect_rgb', Image, self.callback_kinect_rgb)
 
-		# kinect_depth subscriber
-		self.sub_kinect_depth = rospy.Subscriber('/sensor/kinect_depth', Image, self.callback_kinect_depth)
-
-		# velodyne subscriber
-		self.sub_velodyne = rospy.Subscriber('/sensor/velodyne', PointCloud, self.callback_velodyne)
-
-		# hokuyo subscriber
-		self.sub_hokuyo = rospy.Subscriber('/sensor/hokuyo', HokuyoReading, self.callback_hokuyo)
-
 		# traction_speed subscriber
 		self.sub_traction_speed = rospy.Subscriber('/rosi/command_traction_speed', RosiMovementArray, self.callback_traction_speed)
+
+		# ur5toolCam subscriber
+		self.sub_traction_speed = rospy.Subscriber('/sensor/ur5toolCam', Image, self.callback_ur5toolCam)
 
 		# defining the eternal loop frequency
 		node_sleep_rate = rospy.Rate(10)
@@ -170,7 +170,7 @@ class RosiNodeClass():
 			arm_joint_list.joint_variable = self.move_arm_joint(thetaJoint, amrJoint)
 			'''
 
-			thetaAll = [180.0, 0.0, 0.0, 0.0, 0.0, 0.0] # in deg
+			thetaAll = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # in deg
 			arm_joint_list.joint_variable = self.move_arm_all(thetaAll)			
 
 			# publishing
@@ -190,7 +190,7 @@ class RosiNodeClass():
 		# enter in rospy spin
 		#rospy.spin()
 
-	def color_detection(self, img):
+	def fire_detection(self, img):
 		light_color = (39, 255, 255)
 		dark_color = (23, 100, 100)
 		hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -206,6 +206,15 @@ class RosiNodeClass():
 		#cv2.waitKey(1)
 		return None
 
+	def roll_detection(self, img):
+		gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+		low_threshold = 100 #type a positive value
+		high_threshold = 150 #type a positive value
+		edges = cv2.Canny(gray, low_threshold, high_threshold)
+
+		#cv2.imshow("ROSI Roll Detection", edges)
+		#cv2.waitKey(1)
+		return None
 
 	def move_arm_joint(self, theta, joint):
 		grausTorad = 0.0174
@@ -218,18 +227,6 @@ class RosiNodeClass():
 		for i in range(len(theta)):
 			theta[i] = theta[i]*grausTorad
 		return theta
-
-	# Here is your draw_boxes function from the previous exercise
-	def draw_boxes(self, img, bboxes, color=(0, 255, 0), thick=2):
-	    # Make a copy of the image
-	    imcopy = np.copy(img)
-	    # Iterate through the bounding boxes
-	    for bbox in bboxes:
-	        # Draw a rectangle given bbox coordinates
-        	cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
-	    # Return the image copy with boxes drawn
-	    return imcopy
-    
     
 	# Define a function to search for template matches
 	# and return a list of bounding boxes
@@ -255,10 +252,12 @@ class RosiNodeClass():
 		#cv2.imshow("test", final)
         	# Use cv2.matchTemplate() to search the image
         	result = cv2.matchTemplate(final, tmp, method)
-		threshold = 0.3
+		threshold = 0.19
        		# Use cv2.minMaxLoc() to extract the location of the best match
-		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)		
+		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)	
+		#print(min_val)	
 		if abs(min_val) >= threshold:
+			print("Roll Founded")
 	        	# Determine a bounding box for the match
 	        	w, h = (tmp.shape[1], tmp.shape[0])
 	        	if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
@@ -274,12 +273,23 @@ class RosiNodeClass():
         
 	    return bbox_list
 
+	# Here is your draw_boxes function from the previous exercise
+	def draw_boxes(self, img, bboxes, color=(0, 255, 0), thick=2):
+	    # Make a copy of the image
+	    imcopy = np.copy(img)
+	    # Iterate through the bounding boxes
+	    for bbox in bboxes:
+	        # Draw a rectangle given bbox coordinates
+        	cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
+	    # Return the image copy with boxes drawn
+	    return imcopy
+
 	# Save image to a folder
 	def save_image(self, folder, frame, countImage):
 		height,width = frame.shape[0],frame.shape[1] #get width and height of the images 
 		rgb = np.empty((height,width,3),np.uint8) 
 		path = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script'+str('/')+folder # Replace with your path folder
-		file_name = folder+'_'+str(countImage)+'.jpg'
+		file_name = folder+'_'+str(countImage+self.offset)+'.jpg'
 		file_to_save = os.path.join(path,file_name)    
 		cv2.imwrite(os.path.join(path,file_to_save), rgb)
 		return None
@@ -290,8 +300,8 @@ class RosiNodeClass():
 		path_to_folder = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/robotCommands/'        # Replace with your path folder
 		with open(path_to_folder+"driving_log.csv", 'a') as csvfile:
 			filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-			file_name = path_to_image+image+'_'+str(count)+'.jpg'
-			file_name_depth = path_to_image_depth+image_depth+'_'+str(count)+'.jpg'
+			file_name = path_to_image+image+'_'+str(count+self.offset)+'.jpg'
+			file_name_depth = path_to_image_depth+image_depth+'_'+str(count+self.offset)+'.jpg'
 			filewriter.writerow([path_to_image+file_name, path_to_image_depth+file_name_depth, self.tractionCommand[0][0], 								self.tractionCommand[1][0], self.tractionCommand[2][0], 							self.tractionCommand[3][0]])#, self.mediaVector])
 		return None
 
@@ -309,7 +319,7 @@ class RosiNodeClass():
 		axes_ang = msg.axes[0]
 		trigger_left = msg.axes[2]
 		trigger_right = msg.axes[3]
-		button_L = msg.buttons[4]
+		button_L = 1 #msg.buttons[4]
 		button_R = msg.buttons[5]
 		record = msg.buttons[10]
 		autoMode = 1#msg.buttons[9]
@@ -367,7 +377,6 @@ class RosiNodeClass():
 	
 	# kinect callback function
 	def callback_kinect_rgb(self, msg):
-		#rospy.loginfo("Test Image Callback")
 		self.camera_image = msg
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
@@ -375,84 +384,53 @@ class RosiNodeClass():
  			print(e)
 		img_out = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
 		img_out = cv2.resize(img_out, None, fx=.6, fy=.6)
-		img_out = cv2.flip(img_out, 1)
-		y=0
-		x=0
-		h=200
-		w=200
-		crop = img_out[y:y+h, x:x+w]
-		templist = ['/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/fireRed.jpg']
-		#bboxes = self.find_matches(crop, templist)
-		#img_out_crop = self.draw_boxes(crop, bboxes)
-		#cv2.imshow("ROSI Cam crop", img_out_crop)
-		self.color_detection(img_out)
-		cv2.imshow("ROSI Cam RGB", img_out)
-		image_array = np.asarray(img_out)
-		img_out_preprocessed = self.preprocess(image_array)
-		if self.autoModeStart == True:
-			self.steering_angle = model.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
-			#print(self.steering_angle)
+		img_out_flip = cv2.flip(img_out, 1)
+		self.rgbOut = img_out_flip	
 		if self.save_image_flag:
-			self.countImageRGB = self.countImageRGB+1
-			self.save_image('rgb_data', img_out, self.countImageRGB)
-			self.save_command_csv(self.countImageRGB, 'rgb_data', 'depth_data')
-			#self.save_command(self.countImageRGB, self.velodyne, "velodyne/velodyne")
+			self.save_image('single_rgb_data', self.rgbOut, self.countImageRGB)
+		cv2.imshow("ROSI Cam RGB", img_out)	
 		cv2.waitKey(1)
 		return None
 
-	# kinect callback function
-	def callback_kinect_depth(self, msg):
-		#rospy.loginfo("Test Image Callback")
-		self.camera_image_depth = msg
+	def callback_ur5toolCam(self, msg):
+		self.camera_image_arm = msg
 		try:
-			cv_image_depth = self.bridge.imgmsg_to_cv2(self.camera_image_depth, "rgb8")
+			cv_image = self.bridge.imgmsg_to_cv2(self.camera_image_arm, "rgb8")
 		except CvBridgeError as e:
  			print(e)
-		img_out_depth = cv2.cvtColor(cv_image_depth, cv2.COLOR_RGB2BGR)
-		img_out_depth = cv2.resize(img_out_depth, None, fx=.5, fy=.5)
-		img_out_depth = cv2.flip(img_out_depth, 1)
-		#gray_depth = cv2.cvtColor(img_out_depth, cv2.COLOR_BGR2GRAY)
-		#cv2.imshow("ROSI Cam depth", img_out_depth)
-		#cv2.imshow("ROSI Cam gray_depth", gray_depth)
+		img_out = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
+		img_out = cv2.resize(img_out, None, fx=.6, fy=.6)
+		self.img_out_arm = cv2.flip(img_out, 1)
+		self.fire_detection(self.img_out_arm)
+		#cv2.imshow("ROSI ur5toolCam", self.img_out_arm)
+		#self.roll_detection(self.img_out_arm)
+		templist = ['/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/roll.jpg']
+		bboxes = self.find_matches(self.img_out_arm, templist)
+		img_out_crop = self.draw_boxes(self.img_out_arm, bboxes)
+		self.put_image_together()
+		return None
+
+	def put_image_together(self):
+		self.concatImage = np.concatenate((self.img_out_arm, self.rgbOut), axis=1)
+		image_array = np.asarray(self.concatImage)
+		img_out_preprocessed = self.preprocess(image_array)
+		if self.autoModeStart == True and self.contStart < 301:
+			self.contStart = self.contStart + 1
+			print(self.contStart)
+		if self.contStart >= 300: 
+			self.steering_angle = model.predict(img_out_preprocessed[None, :, :, :], batch_size=1)	
 		if self.save_image_flag:
-			self.countImageDepth = self.countImageDepth+1
-			self.save_image('depth_data', img_out_depth, self.countImageDepth)
+			self.save_image('rgb_data', self.concatImage, self.countImageRGB)
+			self.save_command_csv(self.countImageRGB, 'single_rgb_data', 'rgb_data')
+			self.countImageRGB = self.countImageRGB+1		
+		cv2.imshow("ROSI Cams", self.concatImage)
 		cv2.waitKey(1)
 		return None
 
-	# velodyne callback function
-	def callback_velodyne(self, msg):
-		#rospy.loginfo("Test Velodyne Callback")
-		self.velodyneOut = msg
-		points = [[p.x, p.y, p.z, 1] for p in self.velodyneOut.points]
-		self.velodyne = points
-		#print(self.velodyneOut)
-		return None
-
-	# hokuyo callback function
-	#https://www.youtube.com/watch?v=RFNNsDI2b6c
-	def callback_hokuyo(self, msg):
-		#rospy.loginfo("Test Hokuyo Callback")
-		self.hokuyoOut = msg
-		vectorSize = len(self.hokuyoOut.reading)
-		sumVector = 0
-		for i in range(vectorSize):
-			sumVector = sumVector + abs(self.hokuyoOut.reading[i])
-		self.mediaVector = sumVector/vectorSize
-		#print(self.hokuyoOut)
-		#print(self.mediaVector)	
-		#print(self.hokuyoOut.reading[self.countHokuyo]) 
-		#print(self.countHokuyo)
-		#self.countHokuyo = self.countHokuyo + 1
-		return None
-	
 	def callback_traction_speed(self, msg):
-		#rospy.loginfo("Test traction_speed Callback")
 		self.robotMovement = msg
 		movement_array = [[p.joint_var] for p in self.robotMovement.movement_array]
 		self.tractionCommand = movement_array
-		#print(self.tractionCommand)		
-		#print(self.robotMovement.movement_array[0])
 		return None
 
 	# ---- Support Methods --------

@@ -28,13 +28,15 @@ from keras.models import load_model
 
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 
+from sklearn import preprocessing
+
 # Load data for training ############################################################################
 
 #model = load_model('model.h5')
 
 samples = []
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/5voltas/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/5voltas/rgb_data/'
+PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/robotCommands/driving_log.csv'
+PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/rgb_data/'
 
 lines = []
 with open(PATH_log) as csvfile:
@@ -64,21 +66,23 @@ def load_img():
     count = 0
     for line in lines:
         #for i in range(3):
-        source_path = line[0]
+        source_path = line[1]
         filename = source_path.split('/')[-1]
         current_path = PATH_IMG + filename
+        join0 = round(float(lines[count][2]), 5)
+        join1 = round(float(lines[count][3]), 5)
+        join2 = round(float(lines[count][4]), 5)
+        join3 = round(float(lines[count][5]), 5)
         image = cv2.imread(current_path)
         #image = image[40:160,10:310,:]
         image = preprocess(image)        
         images.append(image)
-        join0 = lines[count][2]
-        join1 = lines[count][3]
-        join2 = lines[count][4]
-        join3 = lines[count][5]
-        join = [join0, join1, join2, join3]
-        count = count + 1
-                
-        joins.append(join)
+       	join = [join0, join1, join2, join3]
+	joins.append(join)
+	
+	count = count + 1
+              
+        
     return images, joins
 
 X_train, y_train = load_img()
@@ -86,9 +90,13 @@ X_train, y_train = load_img()
 X_train = np.array(X_train)
 y_train = np.array(y_train)
 
+#mm_scaler = preprocessing.MinMaxScaler()
+#y_train_minmax = mm_scaler.fit_transform(y_train)
+
 # Nvidea model
 model = Sequential()
 model.add(Lambda(lambda x: x/255.0-0.5, input_shape=(64,64,3)))
+#model.add(Dropout(0.2))
 model.add(Convolution2D(24,5,5,subsample=(2,2),activation="relu"))
 model.add(Convolution2D(36,5,5,subsample=(2,2),activation="relu"))
 model.add(Convolution2D(48,5,5,subsample=(2,2),activation="relu"))
@@ -97,31 +105,88 @@ model.add(Convolution2D(64,3,3,activation="relu"))
 model.add(Flatten())
 model.add(Dense(100))
 model.add(Dense(50))
+model.add(Dropout(0.2))
 model.add(Dense(10))
 model.add(Dense(4))
 
 model.summary()
 
 # Set callback functions to early stop training and save the best model so far
-callbacks = [EarlyStopping(monitor='val_loss', patience=2),
+callbacks = [EarlyStopping(monitor='accuracy', patience=2),
              ModelCheckpoint(filepath='best_model.h5', monitor='val_loss', save_best_only=True)]
 
 # Training model using adam optimizer
-model.compile(loss='mse', optimizer='adam')
-
-#model.compile(optimizer='adam', loss='mse')
-model.fit(np.array(X_train), y_train, validation_split = 0.1, shuffle = True, epochs = 10, callbacks=callbacks)
+# Compile model
+model.compile(optimizer='adam', loss='mse')
+model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
+model.fit(np.array(X_train), y_train, validation_split = 0.0, shuffle = True, epochs = 20, callbacks=callbacks)
 
 model.save('model.h5')
 
 #############################################################################################################################################
-
+'''
 # Load trained model for a new data set
 model = load_model('model.h5')
 
 samples = []
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/5voltas/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/5voltas/rgb_data/'
+PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t1/robotCommands/driving_log.csv'
+PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t1/rgb_data/'
+
+lines = []
+with open(PATH_log) as csvfile:
+    reader = csv.reader(csvfile)
+    for line in reader:
+        lines.append(line)
+
+X_train, y_train = load_img()
+
+X_train = np.array(X_train)
+y_train = np.array(y_train)
+
+## Training model using adam optimizer
+model.compile(optimizer='adam', loss='mse')
+model.fit(np.array(X_train), y_train, validation_split = 0.2, shuffle = True, epochs = 10, callbacks=callbacks)
+
+model.save('model.h5')
+'''
+#############################################################################################################################################
+'''
+# Load trained model for a new data set
+model = load_model('model.h5')
+
+samples = []
+PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t6/robotCommands/driving_log.csv'
+PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t6/rgb_data/'
+
+lines = []
+with open(PATH_log) as csvfile:
+    reader = csv.reader(csvfile)
+    for line in reader:
+        lines.append(line)
+
+X_train, y_train = load_img()
+
+X_train = np.array(X_train)
+y_train = np.array(y_train)
+
+mm_scaler = preprocessing.MinMaxScaler()
+y_train_minmax = mm_scaler.fit_transform(y_train)
+
+## Training model using adam optimizer
+model.compile(optimizer='adam', loss='mse')
+model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
+model.fit(np.array(X_train), y_train_minmax, validation_split = 0.2, shuffle = True, epochs = 20, callbacks=callbacks)
+
+model.save('model.h5')
+'''
+#############################################################################################################################################
+'''
+# Load trained model for a new data set
+model = load_model('model.h5')
+
+samples = []
+PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t3/robotCommands/driving_log.csv'
+PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t3/rgb_data/'
 
 lines = []
 with open(PATH_log) as csvfile:
@@ -138,18 +203,18 @@ y_train = np.array(y_train)
 model.compile(loss='mse', optimizer='adam')
 
 model.compile(optimizer='adam', loss='mse')
-model.fit(np.array(X_train), y_train, validation_split = 0.2, shuffle = True, epochs = 5, callbacks=callbacks)
+model.fit(np.array(X_train), y_train, validation_split = 0.5, shuffle = True, epochs = 5, callbacks=None)
 
 model.save('model.h5')
-
+'''
 #############################################################################################################################################
 '''
 # Load trained model for a new data set
 model = load_model('model.h5')
 
 samples = []
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t10/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t10/rgb_data/'
+PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t4/robotCommands/driving_log.csv'
+PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t4/rgb_data/'
 
 lines = []
 with open(PATH_log) as csvfile:
@@ -162,11 +227,13 @@ X_train, y_train = load_img()
 X_train = np.array(X_train)
 y_train = np.array(y_train)
 
-## Training model using adam optimizer
-model.compile(loss='mse', optimizer='adam')
+mm_scaler = preprocessing.MinMaxScaler()
+y_train_minmax = mm_scaler.fit_transform(y_train)
 
+## Training model using adam optimizer
 model.compile(optimizer='adam', loss='mse')
-model.fit(np.array(X_train), y_train, validation_split = 0.1, shuffle = True, epochs = 3, callbacks=callbacks)
+model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
+model.fit(np.array(X_train), y_train_minmax, validation_split = 0.2, shuffle = True, epochs = 10, callbacks=callbacks)
 
 model.save('model.h5')
 '''
@@ -176,8 +243,8 @@ model.save('model.h5')
 model = load_model('model.h5')
 
 samples = []
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t12/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t12/rgb_data/'
+PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t6/robotCommands/driving_log.csv'
+PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t6/rgb_data/'
 
 lines = []
 with open(PATH_log) as csvfile:
@@ -190,38 +257,13 @@ X_train, y_train = load_img()
 X_train = np.array(X_train)
 y_train = np.array(y_train)
 
-## Training model using adam optimizer
-model.compile(loss='mse', optimizer='adam')
+mm_scaler = preprocessing.MinMaxScaler()
+y_train_minmax = mm_scaler.fit_transform(y_train)
 
+## Training model using adam optimizer
 model.compile(optimizer='adam', loss='mse')
-model.fit(np.array(X_train), y_train, validation_split = 0.1, shuffle = True, epochs = 5, callbacks=callbacks)
+model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
+model.fit(np.array(X_train), y_train_minmax, validation_split = 0.2, shuffle = True, epochs = 10, callbacks=callbacks)
 
 model.save('model.h5')
 '''
-#############################################################################################################################################
-
-# Load trained model for a new data set
-model = load_model('model.h5')
-
-samples = []
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t11/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t11/rgb_data/'
-
-lines = []
-with open(PATH_log) as csvfile:
-    reader = csv.reader(csvfile)
-    for line in reader:
-        lines.append(line)
-
-X_train, y_train = load_img()
-
-X_train = np.array(X_train)
-y_train = np.array(y_train)
-
-## Training model using adam optimizer
-model.compile(loss='mse', optimizer='adam')
-
-model.compile(optimizer='adam', loss='mse')
-model.fit(np.array(X_train), y_train, validation_split = 0.1, shuffle = True, epochs = 5, callbacks=callbacks)
-
-model.save('model.h5')
