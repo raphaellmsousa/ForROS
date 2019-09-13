@@ -11,7 +11,7 @@ from sensor_msgs.msg import Joy
 from sensor_msgs.msg import Image
 from std_msgs.msg import Float32
 from geometry_msgs.msg import TwistStamped
-
+from sensor_msgs.msg import NavSatFix
 
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
@@ -119,6 +119,10 @@ class RosiNodeClass():
 
 		# ur5 force torque
 		self.sub_traction_speed = rospy.Subscriber('/ur5/forceTorqueSensorOutput', TwistStamped, self.callback_TorqueSensor)
+
+		# gps
+		self.sub_traction_speed = rospy.Subscriber('/sensor/gps', NavSatFix, self.callback_gps)
+
 
 		# defining the eternal loop frequency
 		node_sleep_rate = rospy.Rate(10)
@@ -359,7 +363,7 @@ class RosiNodeClass():
 		button_L = 1 #msg.buttons[4]
 		button_R = msg.buttons[5]
 		record = msg.buttons[10]
-		autoMode = msg.buttons[9]
+		autoMode = 1 #msg.buttons[9]
 		self.moveJointLeft = msg.buttons[6]
 		self.moveJointRight = msg.buttons[7]
 		self.selectFunction = msg.buttons[14]
@@ -429,8 +433,8 @@ class RosiNodeClass():
 		self.rgbOut = img_out_flip	
 		if self.save_image_flag:
 			self.save_image('single_rgb_data', self.rgbOut, self.countImageRGB)
-		cv2.imshow("ROSI Cam RGB", img_out)	
-		cv2.waitKey(1)
+		#cv2.imshow("ROSI Cam RGB", img_out)	
+		#cv2.waitKey(1)
 		return None
 
 	def callback_ur5toolCam(self, msg):
@@ -464,8 +468,8 @@ class RosiNodeClass():
 			self.save_image('rgb_data', self.concatImage, self.countImageRGB)
 			self.save_command_csv(self.countImageRGB, 'single_rgb_data', 'rgb_data')
 			self.countImageRGB = self.countImageRGB+1		
-		cv2.imshow("ROSI Cams", self.concatImage)
-		cv2.waitKey(1)
+		#cv2.imshow("ROSI Cams", self.concatImage)
+		#cv2.waitKey(1)
 		return None
 
 	def callback_traction_speed(self, msg):
@@ -475,8 +479,13 @@ class RosiNodeClass():
 		return None
 
 	def callback_TorqueSensor(self, msg):
-		print("Torque Sensor Test", msg)
+		#print("Torque Sensor Test", msg)
 		return None
+	
+	def callback_gps(self, msg):
+		print("GPS Test", msg)
+		return None
+	
 
 	# ---- Support Methods --------
 
