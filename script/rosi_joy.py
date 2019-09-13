@@ -10,6 +10,7 @@ from rosi_defy.msg import ManipulatorJoints
 from sensor_msgs.msg import Joy
 from sensor_msgs.msg import Image
 from std_msgs.msg import Float32
+from geometry_msgs.msg import TwistStamped
 
 
 import cv2
@@ -83,7 +84,14 @@ class RosiNodeClass():
 		self.rgbOut = None
 		self.concatImage = None
 		self.contStart = 0
-		self.offset = 3393
+		self.offset = 0
+		self.moveJointLeft = 0
+		self.moveJointRight = 0
+		self.thetaAll = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # in deg
+		self.selectFunction = 0
+		self.jointSelect = 0
+		self.thetaJoint = 0
+		self.resetArm = 0
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -108,6 +116,9 @@ class RosiNodeClass():
 
 		# ur5toolCam subscriber
 		self.sub_traction_speed = rospy.Subscriber('/sensor/ur5toolCam', Image, self.callback_ur5toolCam)
+
+		# ur5 force torque
+		self.sub_traction_speed = rospy.Subscriber('/ur5/forceTorqueSensorOutput', TwistStamped, self.callback_TorqueSensor)
 
 		# defining the eternal loop frequency
 		node_sleep_rate = rospy.Rate(10)
@@ -163,15 +174,41 @@ class RosiNodeClass():
 				arm_command_list.movement_array.append(arm_command)
 
 				arm_joint_command = RosiMovement()
+	
+			deltaArm = 2
 
-			'''
-			thetaJoint = 180 #in deg
-			amrJoint = 0 # from 0 to 5			
-			arm_joint_list.joint_variable = self.move_arm_joint(thetaJoint, amrJoint)
-			'''
+			if self.moveJointLeft == 1 and self.moveJointRight == 0 and self.resetArm == 0:
+				print("Theta:", self.thetaJoint)
+				self.thetaJoint = self.thetaJoint - deltaArm
+			if self.moveJointRight == 1 and self.moveJointLeft == 0 and self.resetArm == 0:
+				print("Theta:", self.thetaJoint)
+				self.thetaJoint = self.thetaJoint + deltaArm
+				self.thetaJoint = self.thetaJoint + deltaArm
+			if self.moveJointLeft == 1 and self.moveJointRight == 1 and self.resetArm == 0:
+				print("Nothing Done!")
+			if self.selectFunction == 1:
+				self.thetaJoint = 0
+				print("Select Function")
+				self.jointSelect = self.jointSelect + 1
+				if self.jointSelect >= 6:
+					self.jointSelect = 0
+				print("Joint Number", self.jointSelect)
 
-			thetaAll = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # in deg
-			arm_joint_list.joint_variable = self.move_arm_all(thetaAll)			
+			if self.resetArm == 1:
+				print("Reset Arm Position")
+				self.moveArm = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+				self.thetaAll = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # in deg
+				self.jointSelect = 0
+				self.thetaJoint = 0
+				arm_joint_list.joint_variable = self.move_arm_all(self.thetaAll)
+
+			if self.thetaJoint >=180:
+				self.thetaJoint = 180
+			if self.thetaJoint <=-180:
+				self.thetaJoint = -180
+			
+			if self.resetArm == 0:
+				arm_joint_list.joint_variable = self.move_arm_joint(self.thetaJoint, self.jointSelect)
 
 			# publishing
 			self.pub_arm.publish(arm_command_list)		
@@ -217,15 +254,15 @@ class RosiNodeClass():
 		return None
 
 	def move_arm_joint(self, theta, joint):
-		grausTorad = 0.0174
-		angInRad = theta*grausTorad
+		grausToRad = 0.0174
+		angInRad = theta*grausToRad
 		self.moveArm[joint] = angInRad
 		return self.moveArm
 
 	def move_arm_all(self, theta):
-		grausTorad = 0.0174
+		grausToRad = 0.0174
 		for i in range(len(theta)):
-			theta[i] = theta[i]*grausTorad
+			theta[i] = theta[i]*grausToRad
 		return theta
     
 	# Define a function to search for template matches
@@ -322,7 +359,11 @@ class RosiNodeClass():
 		button_L = 1 #msg.buttons[4]
 		button_R = msg.buttons[5]
 		record = msg.buttons[10]
-		autoMode = 1#msg.buttons[9]
+		autoMode = msg.buttons[9]
+		self.moveJointLeft = msg.buttons[6]
+		self.moveJointRight = msg.buttons[7]
+		self.selectFunction = msg.buttons[14]
+		self.resetArm = msg.buttons[15]
 
 		if record == 1:
 			self.save_image_flag = True
@@ -433,6 +474,10 @@ class RosiNodeClass():
 		self.tractionCommand = movement_array
 		return None
 
+	def callback_TorqueSensor(self, msg):
+		print("Torque Sensor Test", msg)
+		return None
+
 	# ---- Support Methods --------
 
 	# -- Method for compute the skid-steer A kinematic matrix
@@ -455,4 +500,3 @@ if __name__ == '__main__':
 	try:
 		node_obj = RosiNodeClass()
 	except rospy.ROSInterruptException: pass
-
