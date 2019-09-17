@@ -121,6 +121,7 @@ class RosiNodeClass():
 		self.gpsInc = 0
 		self.latitude = 0
 		self.longitude = 0
+		self.autoMode = 0
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -154,6 +155,8 @@ class RosiNodeClass():
 
 		# defining the eternal loop frequency
 		node_sleep_rate = rospy.Rate(10)
+
+		print("Please, press START button to running the model...")
 
 		# eternal loop (until second order)
 		while not rospy.is_shutdown():
@@ -213,8 +216,6 @@ class RosiNodeClass():
 			Variables:			
 				- self.moveJointLeft and self.moveJointRight => used to rotate joints to the left and right positions.  
 			'''
-
-
 			deltaArm = 2 # angle increment (used to move the arm's joints)
 
 			if self.moveJointLeft == 1 and self.moveJointRight == 0 and self.resetArm == 0:
@@ -249,7 +250,7 @@ class RosiNodeClass():
 			
 			if self.resetArm == 0:
 				arm_joint_list.joint_variable = self.move_arm_joint(self.thetaJoint, self.jointSelect)
-
+			
 			# Publishing topics to vrep simulator
 			self.pub_arm.publish(arm_command_list)		
 			self.pub_traction.publish(traction_command_list)
@@ -497,7 +498,7 @@ class RosiNodeClass():
 		button_L = 1 #msg.buttons[4]
 		button_R = msg.buttons[5]
 		record = msg.buttons[10]
-		autoMode = msg.buttons[9]
+		self.autoMode = self.autoMode + msg.buttons[9]
 		self.moveJointLeft = msg.buttons[6]
 		self.moveJointRight = msg.buttons[7]
 		self.selectFunction = msg.buttons[14]
@@ -509,11 +510,12 @@ class RosiNodeClass():
 		if record == 0:
 			self.save_image_flag = False
 			#print("Stop recording data!")
-		if autoMode == 1:
+		if self.autoMode % 2 == 0:
+			print("Autonomous mode on")
 			self.autoModeStart = True
-		if autoMode == 0:
+		else:
+			print("Autonomous mode off")
 			self.autoModeStart = False
-
 		# Treats axes deadband
 		if axes_lin < 0.15 and axes_lin > -0.15:
 			axes_lin = 0
@@ -626,7 +628,7 @@ class RosiNodeClass():
 		# 3. Counting routine to wait robot being ready to go
 		if self.autoModeStart == True and self.contStart < 301:
 			self.contStart = self.contStart + 1
-			print(self.contStart)
+			print("Almost there...", self.contStart)
 
 		# 4. Call function to predict the traction commands
 		if self.contStart >= 300: 
@@ -691,7 +693,7 @@ class RosiNodeClass():
 			plt.grid(True)
 			plt.pause(0.00001)
 			self.gpsInc = 0
-			#plt.savefig('temp.png')
+			plt.savefig('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/map/map.png')
 		return None
 
 	# ---- Support Methods --------
