@@ -495,7 +495,7 @@ class RosiNodeClass():
 		axes_ang = msg.axes[0]
 		trigger_left = msg.axes[2]
 		trigger_right = msg.axes[3]
-		button_L = 1 #msg.buttons[4]
+		button_L = msg.buttons[4]
 		button_R = msg.buttons[5]
 		record = msg.buttons[10]
 		self.autoMode = self.autoMode + msg.buttons[9]
@@ -513,6 +513,7 @@ class RosiNodeClass():
 		if self.autoMode % 2 == 0:
 			print("Autonomous mode on")
 			self.autoModeStart = True
+			button_L = 1
 		else:
 			print("Autonomous mode off")
 			self.autoModeStart = False
@@ -554,8 +555,11 @@ class RosiNodeClass():
 		if button_L == 1:
 			self.arm_rear_rotSpeed = -1 * self.max_arms_rotational_speed * trigger_left
 		else:
-			self.arm_rear_rotSpeed = self.max_arms_rotational_speed * 0#trigger_left
+			self.arm_rear_rotSpeed = self.max_arms_rotational_speed * trigger_left
 	
+		print("back:", self.arm_rear_rotSpeed)
+		print("front:", self.arm_front_rotSpeed)
+
 	def callback_kinect_rgb(self, msg):
 		'''
 		Kinect callback function
