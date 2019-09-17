@@ -1,7 +1,26 @@
 #!/usr/bin/env python2.7
-# ROSI Challenge
-# 09/2019
-# Team: ForROS
+# -*- coding: utf-8 -*-
+
+###############################################################################################################################
+#			
+#	This code has been developed for the ROSI Challenge 2019 https://github.com/filRocha/rosiChallenge-sbai2019
+#	Team: ForROS		
+#	Institutions: Federal Institute of Paraiba (Cajazeiras) and Federal Institute of Bahia	
+#	Team: Raphaell Maciel de Sousa (team leader/IFPB)
+#		Gerberson Felix da Silva (IFPB)	
+#		Jean Carlos Palácio Santos (IFBA)
+#		Rafael Silva Nogueira Pacheco (IFBA)
+#		Michael Botelho Santana (IFBA)
+#		Sérgio Ricardo Ferreira Andrade Júnior (IFBA)
+#		Matheus Vilela Novaes (IFBA)		
+#		Lucas dos Santos Ribeiro (IFBA)
+#		Félix Santana Brito (IFBA)
+#		José Alberto Diaz Amado (IFBA)
+#
+#	Approach: it was used a behavioral clonning technique to move the robot around the path and avoid obstacles.
+#
+###############################################################################################################################
+
 import rospy
 import numpy as np
 from rosi_defy.msg import RosiMovement
@@ -26,17 +45,22 @@ import os.path
 import csv
 
 from keras.models import load_model
-##################################################################################
-#                          Uncomment to use the model
-##################################################################################
+
+import matplotlib.pyplot as plt
+
+###############################################################################################################################
+#	Uncomment to use the model
+###############################################################################################################################
+
 model = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/model.h5')
 model._make_predict_function()
 
-##################################################################################
-#                          Instructions
-##################################################################################
-# Press button 10 (depends on your control configuration) to record data
-# Press button 9 keep pressing to running the model 
+###############################################################################################################################
+#	Instructions
+###############################################################################################################################
+
+# Press button 10 (depends on your control configuration) to record data and training the (Convolutional Neural Network) CNN
+# Press button 9 (keep pressing to running the model)
 # Tensorflow version 1.14.0
 # Keras version 2.2.5
 
@@ -92,6 +116,11 @@ class RosiNodeClass():
 		self.jointSelect = 0
 		self.thetaJoint = 0
 		self.resetArm = 0
+		self.latitudes = []
+		self.longitudes = []
+		self.gpsInc = 0
+		self.latitude = 0
+		self.longitude = 0
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -122,7 +151,6 @@ class RosiNodeClass():
 
 		# gps
 		self.sub_traction_speed = rospy.Subscriber('/sensor/gps', NavSatFix, self.callback_gps)
-
 
 		# defining the eternal loop frequency
 		node_sleep_rate = rospy.Rate(10)
@@ -178,8 +206,16 @@ class RosiNodeClass():
 				arm_command_list.movement_array.append(arm_command)
 
 				arm_joint_command = RosiMovement()
-	
-			deltaArm = 2
+
+
+			'''		
+			Thease are conditions used to move the arm. The callback_Joy change variables states to select and move the joints
+			Variables:			
+				- self.moveJointLeft and self.moveJointRight => used to rotate joints to the left and right positions.  
+			'''
+
+
+			deltaArm = 2 # angle increment (used to move the arm's joints)
 
 			if self.moveJointLeft == 1 and self.moveJointRight == 0 and self.resetArm == 0:
 				print("Theta:", self.thetaJoint)
@@ -214,12 +250,11 @@ class RosiNodeClass():
 			if self.resetArm == 0:
 				arm_joint_list.joint_variable = self.move_arm_joint(self.thetaJoint, self.jointSelect)
 
-			# publishing
+			# Publishing topics to vrep simulator
 			self.pub_arm.publish(arm_command_list)		
 			self.pub_traction.publish(traction_command_list)
-			#self.pub_kinect_joint.publish(.1)  # -45 < theta < 45 (graus)
+			self.pub_kinect_joint.publish()  # -45 < theta < 45 (graus)
 			self.pub_jointsCommand.publish(arm_joint_list)  
-			#print(arm_joint_list)
 			
 			# sleeps for a while
 			node_sleep_rate.sleep()
@@ -231,125 +266,224 @@ class RosiNodeClass():
 		# enter in rospy spin
 		#rospy.spin()
 
+
+	# Starting usefull functions
+
 	def fire_detection(self, img):
+		'''
+		This routine is used to detect fire in the vrep simulator. For this purpose,
+		it was used a simple color detections function.
+		Reference: https://opencv.org/
+		'''
+
+		# 1. Define color mask (yellow detection)
 		light_color = (39, 255, 255)
 		dark_color = (23, 100, 100)
+
+		# 2. Converting BGR to HSV color space
 		hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+		# 3. Applying the color mask
 		mask = cv2.inRange(hsv_img, dark_color, light_color)
 		result = cv2.bitwise_and(img, img, mask=mask)
+
+		# 4. Using a gaussian function to extract noises
 		kernel_size = 5
 		result = cv2.GaussianBlur(result,(kernel_size, kernel_size), 0)
+
+		# 5. Find contours
 		_, contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)	
 		for contour in contours:
 		        cv2.drawContours(img, contour, -1, (0, 0, 255), 2)	
 			print("Take care, fire detected!!")
+		
+			# In case of fire detection, the GPS coordinates are sent to the map
+			plt.plot(self.latitude, self.longitude, color='r', marker="P", label="Fire")
+			plt.legend(framealpha=1, frameon=True);
+		
+		# 6. plot functions
 		#cv2.imshow("ROSI Color Detection", img)
 		#cv2.waitKey(1)
-		return None
 
-	def roll_detection(self, img):
-		gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-		low_threshold = 100 #type a positive value
-		high_threshold = 150 #type a positive value
-		edges = cv2.Canny(gray, low_threshold, high_threshold)
-
-		#cv2.imshow("ROSI Roll Detection", edges)
-		#cv2.waitKey(1)
 		return None
 
 	def move_arm_joint(self, theta, joint):
-		grausToRad = 0.0174
-		angInRad = theta*grausToRad
-		self.moveArm[joint] = angInRad
+		'''
+		Take as input an angle and a corresponding joint and convert from deg to rad
+		Inputs: 
+			- theta (angle in deg)
+			- joint (number os corresponding joint of the arm)
+		'''
+		grausToRad = 0.0174 # 3.14(rad)/180(deg)
+		angInRad = theta*grausToRad # From deg to rad
+		self.moveArm[joint] = angInRad # Vetor of the arm joints
 		return self.moveArm
 
 	def move_arm_all(self, theta):
-		grausToRad = 0.0174
+		'''
+		Take as input a vector of angles in deg and convert to rad
+		Input: 
+			- theta (angle in deg)
+		'''
+		grausToRad = 0.0174 # 3.14(rad)/180(deg)
+
+		# convert all input vector from deg to rad
 		for i in range(len(theta)):
 			theta[i] = theta[i]*grausToRad
+
 		return theta
     
-	# Define a function to search for template matches
-	# and return a list of bounding boxes
 	def find_matches(self, img, template_list):
-    	# Define an empty list to take bbox coords
-	    bbox_list = []
-	    # Define matching method
-	    # Other options include: cv2.TM_CCORR_NORMED', 'cv2.TM_CCOEFF', 'cv2.TM_CCORR',
-	    #         'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED'
-	    method = cv2.TM_CCOEFF_NORMED
-	    # Iterate through template list
-	    for temp in template_list:
-        	# Read in templates one by one
-        	tmp = cv2.imread(temp)
-		color_select = np.copy(img)
-		color_select[:,:,0] = 0
-		color_select[:,:,1] = 0 
-		img = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
-		#color_select_HLS_S = img[:,:,2]		
-		img[:,:,0] = 0
-		img[:,:,1] = 0 
-		final = img * (color_select)
-		#cv2.imshow("test", final)
-        	# Use cv2.matchTemplate() to search the image
-        	result = cv2.matchTemplate(final, tmp, method)
-		threshold = 0.19
-       		# Use cv2.minMaxLoc() to extract the location of the best match
-		min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)	
-		#print(min_val)	
-		if abs(min_val) >= threshold:
-			print("Roll Founded")
-	        	# Determine a bounding box for the match
-	        	w, h = (tmp.shape[1], tmp.shape[0])
-	        	if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
-	        	    top_left = min_loc
-	        	else:
-	        	    top_left = max_loc
-	        	bottom_right = (top_left[0] + w, top_left[1] + h)
-	        	# Append bbox position to list
-	        	bbox_list.append((top_left, bottom_right))
-	        	# Return the list of bounding boxes
-		if abs(min_val) <= threshold:
-			pass
+		'''
+		Take an image and a list of images for template matching
+		References: https://opencv.org/
+		Inputs:
+			- img (cam image)
+			- template list (list of images for template matching)
+		'''
+
+		# 1. Define an empty list to take bbox coords
+		bbox_list = []
+
+		# 2. Define matching method
+		# Other options include: cv2.TM_CCORR_NORMED', 'cv2.TM_CCOEFF', 'cv2.TM_CCORR',
+		#         'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED'
+		method = cv2.TM_CCOEFF_NORMED
+		
+		# 3. Iterate through template list
+		for temp in template_list:
+			# 3.1. Read in templates one by one
+			tmp = cv2.imread(temp)
+			color_select = np.copy(img)
+			color_select[:,:,0] = 0
+			color_select[:,:,1] = 0 
+			img = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
+		
+			# 3.2. color_select_HLS_S = img[:,:,2]		
+			img[:,:,0] = 0
+			img[:,:,1] = 0 
+			final = img * (color_select)
+
+			#cv2.imshow("test", final)
+	        	# Use cv2.matchTemplate() to search the image
+		       	result = cv2.matchTemplate(final, tmp, method)
+			threshold = 0.19
+
+	       		# 3.3. Use cv2.minMaxLoc() to extract the location of the best match
+			min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)	
+		
+			# 3.4. This condition defines a threshold value for min matching
+			if abs(min_val) >= threshold:
+				print("Roll Founded")
+		        	# Determine a bounding box for the match
+		        	w, h = (tmp.shape[1], tmp.shape[0])
+		        	if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
+		        	    top_left = min_loc
+		        	else:
+		        	    top_left = max_loc
+		        	bottom_right = (top_left[0] + w, top_left[1] + h)
+
+		        	# Append bbox position to list
+		        	bbox_list.append((top_left, bottom_right))
+		        	# Return the list of bounding boxes
+
+			if abs(min_val) <= threshold:
+				pass
         
-	    return bbox_list
+		return bbox_list
 
-	# Here is your draw_boxes function from the previous exercise
 	def draw_boxes(self, img, bboxes, color=(0, 255, 0), thick=2):
-	    # Make a copy of the image
-	    imcopy = np.copy(img)
-	    # Iterate through the bounding boxes
-	    for bbox in bboxes:
-	        # Draw a rectangle given bbox coordinates
-        	cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
-	    # Return the image copy with boxes drawn
-	    return imcopy
+		'''
+		This function takes an image and the template matching function and draws a boxes around the matching 
+		Inputs:
+			- img (image)
+			- bboxes (output of the matching function)
+		'''
+		# 1. Make a copy of the image
+		imcopy = np.copy(img)
 
-	# Save image to a folder
+		# 2. Iterate through the bounding boxes
+		for bbox in bboxes:
+			# Draw a rectangle given bbox coordinates
+			cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
+
+		# 3. Return the image copy with boxes drawn
+		return imcopy
+
 	def save_image(self, folder, frame, countImage):
-		height,width = frame.shape[0],frame.shape[1] #get width and height of the images 
+		'''
+		This function is used to save images in a folder to build a dataset for training the CNN
+		Inputs:
+			- folder (name of the destination folder)
+			- frame (frame from cams)
+			- countImage (a count variable used to enumarate the current picture)
+		'''		
+		# 1. Get width and height of the images
+		height,width = frame.shape[0],frame.shape[1]  
+		
+		# 2. Create a empty matrix with the same dimension of the images
 		rgb = np.empty((height,width,3),np.uint8) 
+
+		# 3. Save the image in a specified path
 		path = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script'+str('/')+folder # Replace with your path folder
 		file_name = folder+'_'+str(countImage+self.offset)+'.jpg'
 		file_to_save = os.path.join(path,file_name)    
 		cv2.imwrite(os.path.join(path,file_to_save), rgb)
+
 		return None
 
-	def save_command_csv(self, count, image, image_depth):
-		path_to_image = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/'+image+'/'
-		path_to_image_depth = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/'+image_depth+'/' # Replace with your path folder
+	def save_command_csv(self, countImage, imageName1, imageName2):
+		'''
+		Save motors commands in a csv file. This is used to train the model for the convolutional neural network (CNN)
+		Inputs:
+			- countImage (a count variable used to enumarate the current picture)	
+			- image ()
+		'''
+		# 1. Write paths to images
+		path_to_imageName1 = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/'+imageName1+'/'   # Replace with your path folder
+		path_to_imageName2 = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/'+imageName2+'/'   # Replace with your path folder
 		path_to_folder = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/robotCommands/'        # Replace with your path folder
+
+		# 2. Create a csv file and save robot traction commands
 		with open(path_to_folder+"driving_log.csv", 'a') as csvfile:
 			filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
-			file_name = path_to_image+image+'_'+str(count+self.offset)+'.jpg'
-			file_name_depth = path_to_image_depth+image_depth+'_'+str(count+self.offset)+'.jpg'
-			filewriter.writerow([path_to_image+file_name, path_to_image_depth+file_name_depth, self.tractionCommand[0][0], 								self.tractionCommand[1][0], self.tractionCommand[2][0], 							self.tractionCommand[3][0]])#, self.mediaVector])
+			file_name = path_to_imageName1+imageName1+'_'+str(countImage+self.offset)+'.jpg'
+			file_name_depth = path_to_imageName2+imageName2+'_'+str(countImage+self.offset)+'.jpg'
+			filewriter.writerow([path_to_imageName1+file_name, path_to_imageName2+file_name_depth, self.tractionCommand[0][0], 								self.tractionCommand[1][0], self.tractionCommand[2][0], 							self.tractionCommand[3][0]])#, self.mediaVector])
 		return None
 
+	def save_map_csv(self, latitude, longitude):
+		'''
+		This function is used to save GPS data for plotting purpose
+		Inputs:
+			- latitude and longitude data from GPS (vrep simulator)
+		'''
+		# 1. Path to save data
+		path_to_folder = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/map/' # Replace with your path folder
+
+		# 2. Save data
+		with open(path_to_folder+"map_log.csv", 'a') as csvfile:
+			filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
+			filewriter.writerow([latitude, longitude])
+		return None
+
+
 	def preprocess(self, img):
+		'''
+		Pipeline to process images from cams. This is used to train the model 
+		for the convolutional neural network (CNN)	
+		Input: 
+			- Image (BRG image from cams)	
+		'''	
+		# 1. Gaussian blur to damping noises
 		image = cv2.GaussianBlur(img, (3,3), 0)
+
+		# 2. Resize image to speed up the CNN training
 		image = cv2.resize(image, (64,64), interpolation=cv2.INTER_AREA)
+
+		# 3. BGR to YUV 
 		proc_img = cv2.cvtColor(image, cv2.COLOR_BGR2YUV)	# cv2 loads images as BGR
+
 		return proc_img
 
 	# joystick callback function
@@ -363,7 +497,7 @@ class RosiNodeClass():
 		button_L = 1 #msg.buttons[4]
 		button_R = msg.buttons[5]
 		record = msg.buttons[10]
-		autoMode = 1 #msg.buttons[9]
+		autoMode = msg.buttons[9]
 		self.moveJointLeft = msg.buttons[6]
 		self.moveJointRight = msg.buttons[7]
 		self.selectFunction = msg.buttons[14]
@@ -418,74 +552,147 @@ class RosiNodeClass():
 		if button_L == 1:
 			self.arm_rear_rotSpeed = -1 * self.max_arms_rotational_speed * trigger_left
 		else:
-			self.arm_rear_rotSpeed = self.max_arms_rotational_speed * trigger_left
+			self.arm_rear_rotSpeed = self.max_arms_rotational_speed * 0#trigger_left
 	
-	# kinect callback function
 	def callback_kinect_rgb(self, msg):
+		'''
+		Kinect callback function
+		Input: 
+			- Image from vrep simulator
+		'''
 		self.camera_image = msg
+
+		# 1. Conversion for opencv 
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 		except CvBridgeError as e:
  			print(e)
+
+		# 2. From RGB to BGR, resize for visualization and flipping
 		img_out = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
 		img_out = cv2.resize(img_out, None, fx=.6, fy=.6)
 		img_out_flip = cv2.flip(img_out, 1)
-		self.rgbOut = img_out_flip	
+		self.rgbOut = img_out_flip
+
+		# 3. Call save image function. This is for CNN purpose	
 		if self.save_image_flag:
 			self.save_image('single_rgb_data', self.rgbOut, self.countImageRGB)
+
+		# 4. Uncomment to display the image
 		#cv2.imshow("ROSI Cam RGB", img_out)	
 		#cv2.waitKey(1)
 		return None
 
 	def callback_ur5toolCam(self, msg):
+		'''
+		Callback functions to get ur5toolCam image data	
+		Input:
+			- Image from vrep simulator
+		'''
 		self.camera_image_arm = msg
+
+		# 1. Conversion for opencv 
 		try:
 			cv_image = self.bridge.imgmsg_to_cv2(self.camera_image_arm, "rgb8")
 		except CvBridgeError as e:
  			print(e)
+
+		# 2. From RGB to BGR, resize for visualization and flipping
 		img_out = cv2.cvtColor(cv_image, cv2.COLOR_RGB2BGR)
 		img_out = cv2.resize(img_out, None, fx=.6, fy=.6)
 		self.img_out_arm = cv2.flip(img_out, 1)
+
+		# 3. Call fire detection function
 		self.fire_detection(self.img_out_arm)
-		#cv2.imshow("ROSI ur5toolCam", self.img_out_arm)
-		#self.roll_detection(self.img_out_arm)
-		templist = ['/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/roll.jpg']
-		bboxes = self.find_matches(self.img_out_arm, templist)
-		img_out_crop = self.draw_boxes(self.img_out_arm, bboxes)
+
+		# 4. Concatenate ur5 and kinect images
 		self.put_image_together()
+
 		return None
 
 	def put_image_together(self):
+		'''
+		This function is used to concatenate images from kinect and ur5toolCam.
+		Besides that, this function calls the routine to predict the velocity 
+		of the motors and get directions to follow the path.		
+		'''
+		# 1. Create a single image with ur5 and kinect ones
 		self.concatImage = np.concatenate((self.img_out_arm, self.rgbOut), axis=1)
+
+		# 2. Create a array and call the process function
 		image_array = np.asarray(self.concatImage)
 		img_out_preprocessed = self.preprocess(image_array)
+
+		# 3. Counting routine to wait robot being ready to go
 		if self.autoModeStart == True and self.contStart < 301:
 			self.contStart = self.contStart + 1
 			print(self.contStart)
+
+		# 4. Call function to predict the traction commands
 		if self.contStart >= 300: 
 			self.steering_angle = model.predict(img_out_preprocessed[None, :, :, :], batch_size=1)	
+
+		# 5. Call save functions for tranning the CNN
 		if self.save_image_flag:
 			self.save_image('rgb_data', self.concatImage, self.countImageRGB)
 			self.save_command_csv(self.countImageRGB, 'single_rgb_data', 'rgb_data')
-			self.countImageRGB = self.countImageRGB+1		
+			self.countImageRGB = self.countImageRGB+1	
+
+		# 6. Uncomment to display images	
 		#cv2.imshow("ROSI Cams", self.concatImage)
 		#cv2.waitKey(1)
 		return None
 
+
 	def callback_traction_speed(self, msg):
+		'''
+		Get traction speed commands from vrep
+		Input:
+			- Traction commands from vrep simulator
+		'''
 		self.robotMovement = msg
 		movement_array = [[p.joint_var] for p in self.robotMovement.movement_array]
 		self.tractionCommand = movement_array
 		return None
 
 	def callback_TorqueSensor(self, msg):
+		'''
+		Get torque sensor data from vrep
+		Input:
+			- UR-5 Force/Torque sensor output. It gives two vector of linear 
+			and angular forces and torques, respectively. Axis order is x, y, z.
+		'''
 		#print("Torque Sensor Test", msg)
 		return None
 	
 	def callback_gps(self, msg):
-		print("GPS Test", msg)
+		'''
+		Get GPS data from vrep
+		Input:
+			- latitude and longitude data from vrep simulator
+		'''
+		# 1. Uncomment to save data
+		#self.save_map_csv(msg.latitude, msg.longitude)
+
+		# 2. Definning pointer variables
+		self.latitude = msg.latitude
+		self.longitude = msg.longitude
+
+		# 3. For plotting purpose, we get a sample after self.gpsInc measurements 
+		self.gpsInc = self.gpsInc + 1
+		if self.gpsInc == 20:
+			self.latitudes.append(self.latitude)
+			self.longitudes.append(self.longitude)
+			plt.title("GPS tracking")
+			plt.plot(self.latitudes, self.longitudes, color='b', label='Path')
+			plt.xlabel('Latitude')
+			plt.ylabel('Longitude')
+			plt.legend(framealpha=1, frameon=True);
+			plt.grid(True)
+			plt.pause(0.00001)
+			self.gpsInc = 0
+			#plt.savefig('temp.png')
 		return None
-	
 
 	# ---- Support Methods --------
 
