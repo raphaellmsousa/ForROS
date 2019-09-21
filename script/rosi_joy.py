@@ -52,8 +52,11 @@ import matplotlib.pyplot as plt
 #	Uncomment to use the model
 ###############################################################################################################################
 
-model = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/model.h5')
-model._make_predict_function()
+model1 = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/model.h5')
+model1._make_predict_function()
+
+model2 = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/modelLadder.h5')
+model2._make_predict_function()
 
 ###############################################################################################################################
 #	Instructions
@@ -99,7 +102,7 @@ class RosiNodeClass():
 		self.velodyne = None
 		self.save_image_flag = False #Flag to save image
 		self.steering_angle = None
-		self.autoModeStart = False
+		self.autoModeStart = True #Default False
 		self.countHokuyo = 0
 		self.mediaVector = 0
 		self.moveArm = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -122,6 +125,8 @@ class RosiNodeClass():
 		self.latitude = 0
 		self.longitude = 0
 		self.autoMode = 0
+		self.trigger_right = 0
+		self.trigger_left = 0
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -334,83 +339,6 @@ class RosiNodeClass():
 
 		return theta
     
-	def find_matches(self, img, template_list):
-		'''
-		Take an image and a list of images for template matching
-		References: https://opencv.org/
-		Inputs:
-			- img (cam image)
-			- template list (list of images for template matching)
-		'''
-
-		# 1. Define an empty list to take bbox coords
-		bbox_list = []
-
-		# 2. Define matching method
-		# Other options include: cv2.TM_CCORR_NORMED', 'cv2.TM_CCOEFF', 'cv2.TM_CCORR',
-		#         'cv2.TM_SQDIFF', 'cv2.TM_SQDIFF_NORMED'
-		method = cv2.TM_CCOEFF_NORMED
-		
-		# 3. Iterate through template list
-		for temp in template_list:
-			# 3.1. Read in templates one by one
-			tmp = cv2.imread(temp)
-			color_select = np.copy(img)
-			color_select[:,:,0] = 0
-			color_select[:,:,1] = 0 
-			img = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
-		
-			# 3.2. color_select_HLS_S = img[:,:,2]		
-			img[:,:,0] = 0
-			img[:,:,1] = 0 
-			final = img * (color_select)
-
-			#cv2.imshow("test", final)
-	        	# Use cv2.matchTemplate() to search the image
-		       	result = cv2.matchTemplate(final, tmp, method)
-			threshold = 0.19
-
-	       		# 3.3. Use cv2.minMaxLoc() to extract the location of the best match
-			min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)	
-		
-			# 3.4. This condition defines a threshold value for min matching
-			if abs(min_val) >= threshold:
-				print("Roll Founded")
-		        	# Determine a bounding box for the match
-		        	w, h = (tmp.shape[1], tmp.shape[0])
-		        	if method in [cv2.TM_SQDIFF, cv2.TM_SQDIFF_NORMED]:
-		        	    top_left = min_loc
-		        	else:
-		        	    top_left = max_loc
-		        	bottom_right = (top_left[0] + w, top_left[1] + h)
-
-		        	# Append bbox position to list
-		        	bbox_list.append((top_left, bottom_right))
-		        	# Return the list of bounding boxes
-
-			if abs(min_val) <= threshold:
-				pass
-        
-		return bbox_list
-
-	def draw_boxes(self, img, bboxes, color=(0, 255, 0), thick=2):
-		'''
-		This function takes an image and the template matching function and draws a boxes around the matching 
-		Inputs:
-			- img (image)
-			- bboxes (output of the matching function)
-		'''
-		# 1. Make a copy of the image
-		imcopy = np.copy(img)
-
-		# 2. Iterate through the bounding boxes
-		for bbox in bboxes:
-			# Draw a rectangle given bbox coordinates
-			cv2.rectangle(imcopy, bbox[0], bbox[1], color, thick)
-
-		# 3. Return the image copy with boxes drawn
-		return imcopy
-
 	def save_image(self, folder, frame, countImage):
 		'''
 		This function is used to save images in a folder to build a dataset for training the CNN
@@ -493,8 +421,8 @@ class RosiNodeClass():
 		# saving joy commands
 		axes_lin = msg.axes[1]
 		axes_ang = msg.axes[0]
-		trigger_left = msg.axes[2]
-		trigger_right = msg.axes[3]
+		self.trigger_left = msg.axes[2]
+		self.trigger_right = msg.axes[3]
 		button_L = msg.buttons[4]
 		button_R = msg.buttons[5]
 		record = msg.buttons[10]
@@ -517,6 +445,7 @@ class RosiNodeClass():
 		else:
 			print("Autonomous mode off")
 			self.autoModeStart = False
+
 		# Treats axes deadband
 		if axes_lin < 0.15 and axes_lin > -0.15:
 			axes_lin = 0
@@ -525,8 +454,8 @@ class RosiNodeClass():
 			axes_ang = 0
 
 		# treats triggers range
-		trigger_left = ((-1 * trigger_left) + 1) / 2
-		trigger_right = ((-1 * trigger_right) + 1) / 2
+		self.trigger_left = ((-1 * self.trigger_left) + 1) / 2
+		self.trigger_right = ((-1 * self.trigger_right) + 1) / 2
 
 		# computing desired linear and angular of the robot
 		vel_linear_x = self.max_translational_speed * axes_lin
@@ -547,18 +476,15 @@ class RosiNodeClass():
 		# -- computes arms command
 		# front arms
 		if button_R == 1:
-			self.arm_front_rotSpeed = self.max_arms_rotational_speed * trigger_right
-		else:
-			self.arm_front_rotSpeed = -1 * self.max_arms_rotational_speed * trigger_right
+			self.arm_front_rotSpeed = self.max_arms_rotational_speed * self.trigger_right
+		#else:
+		#	self.arm_front_rotSpeed = -1 * self.max_arms_rotational_speed * self.trigger_right
 
 		# rear arms
 		if button_L == 1:
-			self.arm_rear_rotSpeed = -1 * self.max_arms_rotational_speed * trigger_left
-		else:
-			self.arm_rear_rotSpeed = self.max_arms_rotational_speed * trigger_left
-	
-		print("back:", self.arm_rear_rotSpeed)
-		print("front:", self.arm_front_rotSpeed)
+			self.arm_rear_rotSpeed = -1 * self.max_arms_rotational_speed * self.trigger_left
+		#else:
+		#	self.arm_rear_rotSpeed = self.max_arms_rotational_speed * self.trigger_left
 
 	def callback_kinect_rgb(self, msg):
 		'''
@@ -630,13 +556,77 @@ class RosiNodeClass():
 		img_out_preprocessed = self.preprocess(image_array)
 
 		# 3. Counting routine to wait robot being ready to go
-		if self.autoModeStart == True and self.contStart < 301:
+		if self.autoModeStart == True:# and self.contStart < 301:
 			self.contStart = self.contStart + 1
 			print("Almost there...", self.contStart)
 
 		# 4. Call function to predict the traction commands
-		if self.contStart >= 300: 
-			self.steering_angle = model.predict(img_out_preprocessed[None, :, :, :], batch_size=1)	
+		offset_lap = 2300
+		if self.contStart >= 0 and self.contStart < 300:
+			#print("####1####")
+			self.arm_front_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_right
+			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_left			
+
+		if self.contStart >= 300 and self.contStart < offset_lap: 
+			#print("####2####")
+			self.steering_angle = model1.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
+		
+		if self.contStart >= offset_lap and self.contStart < 430 + offset_lap:
+			#print("####3####")
+			self.steering_angle = model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
+			self.arm_front_rotSpeed = 0 * self.max_arms_rotational_speed
+			self.arm_rear_rotSpeed = 0 * self.max_arms_rotational_speed
+	
+		if self.contStart >= 415 + offset_lap and self.contStart < 430 + offset_lap:
+			#print("####3.1####")
+			self.steering_angle = model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
+			self.steering_angle = self.steering_angle * [[1.05, 1.05, 1.0, 1.0]]
+
+		if self.contStart >= 430 + offset_lap and self.contStart < 530 + offset_lap:
+			#print("####4####")
+			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+			self.arm_front_rotSpeed = 1.8 * self.max_arms_rotational_speed
+
+		if self.contStart >= 530 + offset_lap and self.contStart < 550 + offset_lap: 
+			#print("####5####")
+			self.steering_angle = [[15.0, 15.0, 15.0, 15.0]]
+			self.arm_front_rotSpeed = 0 * self.max_arms_rotational_speed
+
+		if self.contStart >= 550 + offset_lap and self.contStart < 600 + offset_lap:
+			#print("####6####")
+			self.steering_angle = [[14.0, 14.0, 14.0, 14.0]]
+			self.arm_front_rotSpeed = -0.8 * self.max_arms_rotational_speed
+			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed
+
+		if self.contStart >= 600 + offset_lap and self.contStart < 650 + offset_lap: 
+			#print("####7####")
+			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+			self.arm_rear_rotSpeed = 0 * self.max_arms_rotational_speed
+
+		if self.contStart >= 700 + offset_lap and self.contStart < 710 + offset_lap:
+			#print("####8####")
+			self.arm_rear_rotSpeed = 1.2 * self.max_arms_rotational_speed
+
+		if self.contStart >= 710 + offset_lap and self.contStart < 730 + offset_lap: 
+			#print("####9####")
+			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+			self.arm_rear_rotSpeed = 0 * self.max_arms_rotational_speed
+
+		if self.contStart >= 730 + offset_lap and self.contStart < 770 + offset_lap: 
+			#print("####10####")
+			self.steering_angle = [[6.0, 6.0, 6.0, 6.0]]
+
+		if self.contStart >= 770 + offset_lap and self.contStart < 790 + offset_lap: 
+			#print("####11####")
+			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+
+		if self.contStart >= 790 + offset_lap and self.contStart < 890 + offset_lap: 
+			#print("####12####")
+			self.steering_angle = [[-12.0, -12.0, -12.0, -12.0]]
+
+		if self.contStart >= 890 + offset_lap:
+			#print("####13####")
+			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 
 		# 5. Call save functions for tranning the CNN
 		if self.save_image_flag:
@@ -695,7 +685,7 @@ class RosiNodeClass():
 			plt.ylabel('Longitude')
 			plt.legend(framealpha=1, frameon=True);
 			plt.grid(True)
-			plt.pause(0.00001)
+			plt.pause(0.001)
 			self.gpsInc = 0
 			plt.savefig('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/map/map.png')
 		return None
