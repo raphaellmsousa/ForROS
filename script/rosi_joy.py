@@ -561,73 +561,74 @@ class RosiNodeClass():
 			print("Almost there...", self.contStart)
 
 		# 4. Call function to predict the traction commands
-		offset_lap = 2300
+		offset_lap = 2350 # count reference to start a new model to up the stairs
+		# 4.1. Robot start position 
 		if self.contStart >= 0 and self.contStart < 300:
 			#print("####1####")
 			self.arm_front_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_right
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_left			
 
+		# 4.2. Start prediction model 1
 		if self.contStart >= 300 and self.contStart < offset_lap: 
 			#print("####2####")
 			self.steering_angle = model1.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
 		
+		# 4.2. Start prediction model 1
+		if self.contStart >= 850 and self.contStart < 860: 
+			#print("####2.1####")
+			self.steering_angle = model1.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
+			# Just a small trajectory correction to help the CNN avoid obstacle
+			self.steering_angle = self.steering_angle * [[1.0, 1.0, 1.05, 1.05]] 
+
+		# 4.3. Start prediction model 2
 		if self.contStart >= offset_lap and self.contStart < 430 + offset_lap:
 			#print("####3####")
 			self.steering_angle = model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
 			self.arm_front_rotSpeed = 0 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = 0 * self.max_arms_rotational_speed
 	
-		if self.contStart >= 415 + offset_lap and self.contStart < 430 + offset_lap:
-			#print("####3.1####")
-			self.steering_angle = model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
-			self.steering_angle = self.steering_angle * [[1.05, 1.05, 1.0, 1.0]]
-
+		# 4.4. Front arm go down and stop motors	
 		if self.contStart >= 430 + offset_lap and self.contStart < 530 + offset_lap:
 			#print("####4####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.arm_front_rotSpeed = 1.8 * self.max_arms_rotational_speed
 
-		if self.contStart >= 530 + offset_lap and self.contStart < 550 + offset_lap: 
+		# 4.5. Climbing stairs
+		if self.contStart >= 530 + offset_lap and self.contStart < 590 + offset_lap:
 			#print("####5####")
-			self.steering_angle = [[15.0, 15.0, 15.0, 15.0]]
-			self.arm_front_rotSpeed = 0 * self.max_arms_rotational_speed
-
-		if self.contStart >= 550 + offset_lap and self.contStart < 600 + offset_lap:
-			#print("####6####")
 			self.steering_angle = [[14.0, 14.0, 14.0, 14.0]]
 			self.arm_front_rotSpeed = -0.8 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed
 
-		if self.contStart >= 600 + offset_lap and self.contStart < 650 + offset_lap: 
+		# 4.6. Stop motors
+		if self.contStart >= 590 + offset_lap and self.contStart < 730 + offset_lap: 
+			print("####6####")
+			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+			self.arm_front_rotSpeed = 0.5 * self.max_arms_rotational_speed
+			self.arm_rear_rotSpeed = 0.2 * self.max_arms_rotational_speed
+
+		# 4.7. Move foward
+		if self.contStart >= 730 + offset_lap and self.contStart < 910 + offset_lap: 
 			#print("####7####")
-			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
-			self.arm_rear_rotSpeed = 0 * self.max_arms_rotational_speed
-
-		if self.contStart >= 700 + offset_lap and self.contStart < 710 + offset_lap:
-			#print("####8####")
-			self.arm_rear_rotSpeed = 1.2 * self.max_arms_rotational_speed
-
-		if self.contStart >= 710 + offset_lap and self.contStart < 730 + offset_lap: 
-			#print("####9####")
-			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
-			self.arm_rear_rotSpeed = 0 * self.max_arms_rotational_speed
-
-		if self.contStart >= 730 + offset_lap and self.contStart < 770 + offset_lap: 
-			#print("####10####")
 			self.steering_angle = [[6.0, 6.0, 6.0, 6.0]]
+			self.arm_front_rotSpeed = 0.0 * self.max_arms_rotational_speed
+			self.arm_rear_rotSpeed = 0.0 * self.max_arms_rotational_speed
 
-		if self.contStart >= 770 + offset_lap and self.contStart < 790 + offset_lap: 
-			#print("####11####")
+		# 4.8. Stop motors
+		if self.contStart >= 910 + offset_lap and self.contStart < 920 + offset_lap: 
+			#print("####8####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 
-		if self.contStart >= 790 + offset_lap and self.contStart < 890 + offset_lap: 
-			#print("####12####")
-			self.steering_angle = [[-12.0, -12.0, -12.0, -12.0]]
+		# 4.9. Move back
+		if self.contStart >= 920 + offset_lap and self.contStart < 1100 + offset_lap: 
+			#print("####9####")
+			self.steering_angle = [[-8.0, -8.0, -8.0, -8.0]]
 
-		if self.contStart >= 890 + offset_lap:
-			#print("####13####")
+		# 4.10. Stop motors
+		if self.contStart >= 1100 + offset_lap:
+			#print("####10####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
-
+		
 		# 5. Call save functions for tranning the CNN
 		if self.save_image_flag:
 			self.save_image('rgb_data', self.concatImage, self.countImageRGB)
