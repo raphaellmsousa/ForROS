@@ -39,9 +39,6 @@ import numpy as np
 from sensor_msgs.msg import PointCloud
 from rosi_defy.msg import HokuyoReading
 
-import os
-import os.path
-
 import csv
 
 from keras.models import load_model
@@ -52,10 +49,10 @@ import matplotlib.pyplot as plt
 #	Uncomment to use the model
 ###############################################################################################################################
 
-model1 = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/model.h5')
+model1 = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/model.h5') # Replace with your path folder
 model1._make_predict_function()
 
-model2 = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/modelLadder.h5')
+model2 = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/modelLadder.h5') # Replace with your path folder
 model2._make_predict_function()
 
 ###############################################################################################################################
@@ -111,9 +108,8 @@ class RosiNodeClass():
 		self.rgbOut = None
 		self.concatImage = None
 		self.contStart = 0
-		self.offset = 0
-		self.moveJointLeft = 0
-		self.moveJointRight = 0
+		self.offset = 0 # Used to create dataset
+		self.arm_joint = []
 		self.thetaAll = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # in deg
 		self.selectFunction = 0
 		self.jointSelect = 0
@@ -127,6 +123,9 @@ class RosiNodeClass():
 		self.autoMode = 0
 		self.trigger_right = 0
 		self.trigger_left = 0
+		self.fire = False
+		self.countFire = 0
+		self.state = False 
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -161,15 +160,14 @@ class RosiNodeClass():
 		# defining the eternal loop frequency
 		node_sleep_rate = rospy.Rate(10)
 
-		print("Please, press START button to running the model...")
+		print("Please, press START on vrep Simulator...")
 
 		# eternal loop (until second order)
 		while not rospy.is_shutdown():
 
 			arm_command_list = RosiMovementArray()
 			traction_command_list = RosiMovementArray()
-			arm_joint_list = ManipulatorJoints()
-
+			
 			# mounting the lists
 			for i in range(4):
 
@@ -215,52 +213,10 @@ class RosiNodeClass():
 
 				arm_joint_command = RosiMovement()
 
-
-			'''		
-			Thease are conditions used to move the arm. The callback_Joy change variables states to select and move the joints
-			Variables:			
-				- self.moveJointLeft and self.moveJointRight => used to rotate joints to the left and right positions.  
-			'''
-			deltaArm = 2 # angle increment (used to move the arm's joints)
-
-			if self.moveJointLeft == 1 and self.moveJointRight == 0 and self.resetArm == 0:
-				print("Theta:", self.thetaJoint)
-				self.thetaJoint = self.thetaJoint - deltaArm
-			if self.moveJointRight == 1 and self.moveJointLeft == 0 and self.resetArm == 0:
-				print("Theta:", self.thetaJoint)
-				self.thetaJoint = self.thetaJoint + deltaArm
-				self.thetaJoint = self.thetaJoint + deltaArm
-			if self.moveJointLeft == 1 and self.moveJointRight == 1 and self.resetArm == 0:
-				print("Nothing Done!")
-			if self.selectFunction == 1:
-				self.thetaJoint = 0
-				print("Select Function")
-				self.jointSelect = self.jointSelect + 1
-				if self.jointSelect >= 6:
-					self.jointSelect = 0
-				print("Joint Number", self.jointSelect)
-
-			if self.resetArm == 1:
-				print("Reset Arm Position")
-				self.moveArm = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-				self.thetaAll = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # in deg
-				self.jointSelect = 0
-				self.thetaJoint = 0
-				arm_joint_list.joint_variable = self.move_arm_all(self.thetaAll)
-
-			if self.thetaJoint >=180:
-				self.thetaJoint = 180
-			if self.thetaJoint <=-180:
-				self.thetaJoint = -180
-			
-			if self.resetArm == 0:
-				arm_joint_list.joint_variable = self.move_arm_joint(self.thetaJoint, self.jointSelect)
-			
 			# Publishing topics to vrep simulator
 			self.pub_arm.publish(arm_command_list)		
 			self.pub_traction.publish(traction_command_list)
-			self.pub_kinect_joint.publish()  # -45 < theta < 45 (graus)
-			self.pub_jointsCommand.publish(arm_joint_list)  
+			self.pub_kinect_joint.publish()  # -45 < theta < 45 (graus)			  
 			
 			# sleeps for a while
 			node_sleep_rate.sleep()
@@ -297,10 +253,12 @@ class RosiNodeClass():
 		kernel_size = 5
 		result = cv2.GaussianBlur(result,(kernel_size, kernel_size), 0)
 
+		self.fire = False
 		# 5. Find contours
 		_, contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)	
 		for contour in contours:
 		        cv2.drawContours(img, contour, -1, (0, 0, 255), 2)	
+			self.fire = True
 			print("Take care, fire detected!!")
 		
 			# In case of fire detection, the GPS coordinates are sent to the map
@@ -308,8 +266,8 @@ class RosiNodeClass():
 			plt.legend(framealpha=1, frameon=True);
 		
 		# 6. plot functions
-		#cv2.imshow("ROSI Color Detection", img)
-		#cv2.waitKey(1)
+		cv2.imshow("ROSI Color Detection", img)
+		cv2.waitKey(1)
 
 		return None
 
@@ -339,6 +297,13 @@ class RosiNodeClass():
 
 		return theta
     
+	def pub_roll_arm_position(self, theta):
+		arm_joint_list = ManipulatorJoints()	
+		self.thetaAll = theta #[-90.0, 10.0, 0.0, 0.0, 90.0, 0.0] # in deg
+		arm_joint_list.joint_variable = self.move_arm_all(self.thetaAll)
+		self.pub_jointsCommand.publish(arm_joint_list)
+		return None
+
 	def save_image(self, folder, frame, countImage):
 		'''
 		This function is used to save images in a folder to build a dataset for training the CNN
@@ -395,7 +360,6 @@ class RosiNodeClass():
 			filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
 			filewriter.writerow([latitude, longitude])
 		return None
-
 
 	def preprocess(self, img):
 		'''
@@ -564,38 +528,38 @@ class RosiNodeClass():
 		offset_lap = 2350 # count reference to start a new model to up the stairs
 		# 4.1. Robot start position 
 		if self.contStart >= 0 and self.contStart < 300:
-			#print("####1####")
+			print("####1####")
 			self.arm_front_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_right
-			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_left			
+			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_left		
 
 		# 4.2. Start prediction model 1
 		if self.contStart >= 300 and self.contStart < offset_lap: 
-			#print("####2####")
+			print("####2####")
 			self.steering_angle = model1.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
 		
 		# 4.2. Start prediction model 1
 		if self.contStart >= 850 and self.contStart < 860: 
-			#print("####2.1####")
+			print("####2.1####")
 			self.steering_angle = model1.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
 			# Just a small trajectory correction to help the CNN avoid obstacle
 			self.steering_angle = self.steering_angle * [[1.0, 1.0, 1.05, 1.05]] 
 
 		# 4.3. Start prediction model 2
 		if self.contStart >= offset_lap and self.contStart < 430 + offset_lap:
-			#print("####3####")
+			print("####3####")
 			self.steering_angle = model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
 			self.arm_front_rotSpeed = 0 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = 0 * self.max_arms_rotational_speed
 	
 		# 4.4. Front arm go down and stop motors	
 		if self.contStart >= 430 + offset_lap and self.contStart < 530 + offset_lap:
-			#print("####4####")
+			print("####4####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.arm_front_rotSpeed = 1.8 * self.max_arms_rotational_speed
 
 		# 4.5. Climbing stairs
 		if self.contStart >= 530 + offset_lap and self.contStart < 590 + offset_lap:
-			#print("####5####")
+			print("####5####")
 			self.steering_angle = [[14.0, 14.0, 14.0, 14.0]]
 			self.arm_front_rotSpeed = -0.8 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed
@@ -604,30 +568,47 @@ class RosiNodeClass():
 		if self.contStart >= 590 + offset_lap and self.contStart < 730 + offset_lap: 
 			print("####6####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+			self.pub_roll_arm_position([-90.0, 10.0, 0.0, 0.0, 90.0, 0.0])
 			self.arm_front_rotSpeed = 0.5 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = 0.2 * self.max_arms_rotational_speed
 
 		# 4.7. Move foward
-		if self.contStart >= 730 + offset_lap and self.contStart < 910 + offset_lap: 
-			#print("####7####")
-			self.steering_angle = [[6.0, 6.0, 6.0, 6.0]]
-			self.arm_front_rotSpeed = 0.0 * self.max_arms_rotational_speed
-			self.arm_rear_rotSpeed = 0.0 * self.max_arms_rotational_speed
+		if self.contStart >= 730 + offset_lap and self.contStart < 1200 + offset_lap: 
+			print("####7####")
+
+			if self.state == False:
+				self.steering_angle = [[3.0, 3.0, 3.0, 3.0]]
+				self.arm_front_rotSpeed = 0.0 * self.max_arms_rotational_speed
+				self.arm_rear_rotSpeed = 0.0 * self.max_arms_rotational_speed
+							
+			if self.fire == True:
+				self.countFire = self.countFire + 1
+				self.state = True
+				print(self.countFire)
+			
+			if self.countFire <= 65:
+				self.steering_angle = [[1.5, 1.5, 1.5, 1.5]]
+				
+			if self.countFire > 65:
+				self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+				self.pub_roll_arm_position([-90.0, -35.0, -25.0, 60.0, 90.0, 0.0])
 
 		# 4.8. Stop motors
-		if self.contStart >= 910 + offset_lap and self.contStart < 920 + offset_lap: 
-			#print("####8####")
+		if self.contStart >= 1200 + offset_lap and self.contStart < 1210 + offset_lap: 
+			print("####8####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 
 		# 4.9. Move back
-		if self.contStart >= 920 + offset_lap and self.contStart < 1100 + offset_lap: 
-			#print("####9####")
+		if self.contStart >= 1210 + offset_lap and self.contStart < 1300 + offset_lap: 
+			print("####9####")
 			self.steering_angle = [[-8.0, -8.0, -8.0, -8.0]]
+			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
 		# 4.10. Stop motors
-		if self.contStart >= 1100 + offset_lap:
-			#print("####10####")
+		if self.contStart >= 1300 + offset_lap:
+			print("####10####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 		
 		# 5. Call save functions for tranning the CNN
 		if self.save_image_flag:
@@ -688,7 +669,8 @@ class RosiNodeClass():
 			plt.grid(True)
 			plt.pause(0.001)
 			self.gpsInc = 0
-			plt.savefig('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/map/map.png')
+			# 3.1. Uncomment to save the map
+			#plt.savefig('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/map/map.png') # Replace with your path folder
 		return None
 
 	# ---- Support Methods --------

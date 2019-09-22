@@ -1,14 +1,27 @@
 #!/usr/bin/env python2.7
-# Udacity
-# Selfdriving cars Nanodegree program
-# Cajazeiras - PB / Brazil
-# Author: Raphaell Maciel de Sousa
-# Description: program to generate a model for behavioral cloning
-# Data: 07/07/2017
-# Modification: 31/08/2019
+# -*- coding: utf-8 -*-
 
-# Load required packages ###########################################################################
+###############################################################################################################################
+#			
+#	This code has been developed for the ROSI Challenge 2019 https://github.com/filRocha/rosiChallenge-sbai2019
+#	Team: ForROS		
+#	Institutions: Federal Institute of Paraiba (Cajazeiras) and Federal Institute of Bahia	
+#	Team: Raphaell Maciel de Sousa (team leader/IFPB)
+#		Gerberson Felix da Silva (IFPB)	
+#		Jean Carlos Palácio Santos (IFBA)
+#		Rafael Silva Nogueira Pacheco (IFBA)
+#		Michael Botelho Santana (IFBA)
+#		Sérgio Ricardo Ferreira Andrade Júnior (IFBA)
+#		Matheus Vilela Novaes (IFBA)		
+#		Lucas dos Santos Ribeiro (IFBA)
+#		Félix Santana Brito (IFBA)
+#		José Alberto Diaz Amado (IFBA)
+#
+#	Approach: it was used a behavioral clonning technique to move the robot around the path and avoid obstacles.
+#
+###############################################################################################################################
 
+# Load required packages
 import os
 import csv
 import cv2
@@ -35,8 +48,8 @@ from sklearn import preprocessing
 #model = load_model('model.h5')
 
 samples = []
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/rgb_data/'
+PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t9/robotCommands/driving_log.csv'
+PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t9/rgb_data/'
 
 lines = []
 with open(PATH_log) as csvfile:
@@ -90,13 +103,9 @@ X_train, y_train = load_img()
 X_train = np.array(X_train)
 y_train = np.array(y_train)
 
-#mm_scaler = preprocessing.MinMaxScaler()
-#y_train_minmax = mm_scaler.fit_transform(y_train)
-
 # Nvidea model
 model = Sequential()
 model.add(Lambda(lambda x: x/255.0-0.5, input_shape=(64,64,3)))
-#model.add(Dropout(0.2))
 model.add(Convolution2D(24,5,5,subsample=(2,2),activation="relu"))
 model.add(Convolution2D(36,5,5,subsample=(2,2),activation="relu"))
 model.add(Convolution2D(48,5,5,subsample=(2,2),activation="relu"))
@@ -119,151 +128,6 @@ callbacks = [EarlyStopping(monitor='accuracy', patience=2),
 # Compile model
 model.compile(optimizer='adam', loss='mse')
 model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
-model.fit(np.array(X_train), y_train, validation_split = 0.0, shuffle = True, epochs = 20, callbacks=callbacks)
+model.fit(np.array(X_train), y_train, validation_split = 0.0, shuffle = True, epochs = 3, callbacks=callbacks)
 
-model.save('model.h5')
-
-#############################################################################################################################################
-'''
-# Load trained model for a new data set
-model = load_model('model.h5')
-
-samples = []
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t1/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t1/rgb_data/'
-
-lines = []
-with open(PATH_log) as csvfile:
-    reader = csv.reader(csvfile)
-    for line in reader:
-        lines.append(line)
-
-X_train, y_train = load_img()
-
-X_train = np.array(X_train)
-y_train = np.array(y_train)
-
-## Training model using adam optimizer
-model.compile(optimizer='adam', loss='mse')
-model.fit(np.array(X_train), y_train, validation_split = 0.2, shuffle = True, epochs = 10, callbacks=callbacks)
-
-model.save('model.h5')
-'''
-#############################################################################################################################################
-'''
-# Load trained model for a new data set
-model = load_model('model.h5')
-
-samples = []
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t6/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t6/rgb_data/'
-
-lines = []
-with open(PATH_log) as csvfile:
-    reader = csv.reader(csvfile)
-    for line in reader:
-        lines.append(line)
-
-X_train, y_train = load_img()
-
-X_train = np.array(X_train)
-y_train = np.array(y_train)
-
-mm_scaler = preprocessing.MinMaxScaler()
-y_train_minmax = mm_scaler.fit_transform(y_train)
-
-## Training model using adam optimizer
-model.compile(optimizer='adam', loss='mse')
-model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
-model.fit(np.array(X_train), y_train_minmax, validation_split = 0.2, shuffle = True, epochs = 20, callbacks=callbacks)
-
-model.save('model.h5')
-'''
-#############################################################################################################################################
-'''
-# Load trained model for a new data set
-model = load_model('model.h5')
-
-samples = []
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t3/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t3/rgb_data/'
-
-lines = []
-with open(PATH_log) as csvfile:
-    reader = csv.reader(csvfile)
-    for line in reader:
-        lines.append(line)
-
-X_train, y_train = load_img()
-
-X_train = np.array(X_train)
-y_train = np.array(y_train)
-
-## Training model using adam optimizer
-model.compile(loss='mse', optimizer='adam')
-
-model.compile(optimizer='adam', loss='mse')
-model.fit(np.array(X_train), y_train, validation_split = 0.5, shuffle = True, epochs = 5, callbacks=None)
-
-model.save('model.h5')
-'''
-#############################################################################################################################################
-'''
-# Load trained model for a new data set
-model = load_model('model.h5')
-
-samples = []
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t4/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t4/rgb_data/'
-
-lines = []
-with open(PATH_log) as csvfile:
-    reader = csv.reader(csvfile)
-    for line in reader:
-        lines.append(line)
-
-X_train, y_train = load_img()
-
-X_train = np.array(X_train)
-y_train = np.array(y_train)
-
-mm_scaler = preprocessing.MinMaxScaler()
-y_train_minmax = mm_scaler.fit_transform(y_train)
-
-## Training model using adam optimizer
-model.compile(optimizer='adam', loss='mse')
-model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
-model.fit(np.array(X_train), y_train_minmax, validation_split = 0.2, shuffle = True, epochs = 10, callbacks=callbacks)
-
-model.save('model.h5')
-'''
-#############################################################################################################################################
-'''
-# Load trained model for a new data set
-model = load_model('model.h5')
-
-samples = []
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t6/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t6/rgb_data/'
-
-lines = []
-with open(PATH_log) as csvfile:
-    reader = csv.reader(csvfile)
-    for line in reader:
-        lines.append(line)
-
-X_train, y_train = load_img()
-
-X_train = np.array(X_train)
-y_train = np.array(y_train)
-
-mm_scaler = preprocessing.MinMaxScaler()
-y_train_minmax = mm_scaler.fit_transform(y_train)
-
-## Training model using adam optimizer
-model.compile(optimizer='adam', loss='mse')
-model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
-model.fit(np.array(X_train), y_train_minmax, validation_split = 0.2, shuffle = True, epochs = 10, callbacks=callbacks)
-
-model.save('model.h5')
-'''
+model.save('modelLadder.h5')
