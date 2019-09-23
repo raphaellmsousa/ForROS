@@ -123,9 +123,12 @@ class RosiNodeClass():
 		self.autoMode = 0
 		self.trigger_right = 0
 		self.trigger_left = 0
-		self.fire = False
-		self.countFire = 0
-		self.state = False 
+		self.fire = False		
+		self.state = False
+		self.state2 = False 
+		self.state3 = False
+		self.ang = 0
+		self.cx = 0
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -261,6 +264,17 @@ class RosiNodeClass():
 			self.fire = True
 			print("Take care, fire detected!!")
 		
+			# Find center of contours
+			M = cv2.moments(contour)
+			if M['m00'] > 0:
+				self.cx = int(M['m10']/M['m00'])
+				cy = int(M['m01']/M['m00'])
+				# draw the contour and center of the shape on the image
+				cv2.circle(img, (self.cx, cy), 7, (255, 255, 255), -1)
+				cv2.putText(img, "center", (self.cx - 20, cy - 20),
+					cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+			else:
+				pass
 			# In case of fire detection, the GPS coordinates are sent to the map
 			plt.plot(self.latitude, self.longitude, color='r', marker="P", label="Fire")
 			plt.legend(framealpha=1, frameon=True);
@@ -268,7 +282,6 @@ class RosiNodeClass():
 		# 6. plot functions
 		cv2.imshow("ROSI Color Detection", img)
 		cv2.waitKey(1)
-
 		return None
 
 	def move_arm_joint(self, theta, joint):
@@ -572,8 +585,8 @@ class RosiNodeClass():
 			self.arm_front_rotSpeed = 0.5 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = 0.2 * self.max_arms_rotational_speed
 
-		# 4.7. Move foward
-		if self.contStart >= 730 + offset_lap and self.contStart < 1200 + offset_lap: 
+		# 4.7. Move foward or get rolls
+		if self.contStart >= 730 + offset_lap and self.contStart < 1100 + offset_lap: 
 			print("####7####")
 
 			if self.state == False:
@@ -581,31 +594,35 @@ class RosiNodeClass():
 				self.arm_front_rotSpeed = 0.0 * self.max_arms_rotational_speed
 				self.arm_rear_rotSpeed = 0.0 * self.max_arms_rotational_speed
 							
-			if self.fire == True:
-				self.countFire = self.countFire + 1
+			if self.fire == True and self.state2 == False:
+				self.steering_angle = [[2.5, 2.5, 2.5, 2.5]]
 				self.state = True
-				print(self.countFire)
-			
-			if self.countFire <= 65:
-				self.steering_angle = [[1.5, 1.5, 1.5, 1.5]]
-				
-			if self.countFire > 65:
+
+			if self.cx >= 180 and self.cx <= 192:
 				self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
-				self.pub_roll_arm_position([-90.0, -35.0, -25.0, 60.0, 90.0, 0.0])
+				self.state2 = True
+				self.state3 = True
+
+			if self.state3 == True:
+				self.ang = self.ang - 1.0 
+				self.pub_roll_arm_position([-90.0, self.ang, 10.0, 60.0, 90.0, 0.0])
+				if abs(self.ang) >= 50:
+					self.ang = -50 
+				print("ang:", self.ang)				
 
 		# 4.8. Stop motors
-		if self.contStart >= 1200 + offset_lap and self.contStart < 1210 + offset_lap: 
+		if self.contStart >= 1100 + offset_lap and self.contStart < 1200 + offset_lap: 
 			print("####8####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 
 		# 4.9. Move back
-		if self.contStart >= 1210 + offset_lap and self.contStart < 1300 + offset_lap: 
+		if self.contStart >= 1200 + offset_lap and self.contStart < 1380 + offset_lap: 
 			print("####9####")
 			self.steering_angle = [[-8.0, -8.0, -8.0, -8.0]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
 		# 4.10. Stop motors
-		if self.contStart >= 1300 + offset_lap:
+		if self.contStart >= 1380 + offset_lap:
 			print("####10####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])

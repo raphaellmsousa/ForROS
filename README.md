@@ -1,66 +1,58 @@
-![logo](https://user-images.githubusercontent.com/31168586/65375672-9a9cee80-dc6e-11e9-9317-28579517608c.png)
-## Instalação
+<h1 align="center">
+  <br>
+  <a href="https://www.overleaf.com"><img src="https://user-images.githubusercontent.com/31168586/65396910-dbd1f300-dd81-11e9-9a98-8f4f329461e0.png" alt="Overleaf" width="400"></a>
+</h1>
 
-Linux:
+<h4 align="center">
 
-- Para executar o codigo, primeiro precisamos seguir as orientaçes definidas pelos organizados do evento.[Link](https://github.com/filRocha/rosiChallenge-sbai2019/blog/master/README.md)
-- do npm install my-crazy-module --save
+CHALLENGE ROSI 2019 Competition Team</h4>
 
-Windows:
+<p align="center">
+  <a href="#key-features">Key Features</a> •
+  <a href="https://github.com/overleaf/overleaf/wiki">Wiki</a> •
+  <a href="#Instructions">Instructions</a> •
+  <a href="#Instructions">Installation</a> •
+  <a href="#contributing">Contributing</a> •
+  <a href="#Team">Team</a> •
+  <a href="#license">License</a>
+</p>
 
-```sh
-edit autoexec.bat
-```
+<a href="https://www.overleaf.com"><img src="https://user-images.githubusercontent.com/31168586/65396913-e096a700-dd81-11e9-9b02-68e3119673cd.png" alt="Overleaf" ></a>
 
-## Exemplo de uso
+## Key Features
 
-Alguns exemplos interessantes e úteis sobre como seu projeto pode ser utilizado. Adicione blocos de códigos e, se necessário, screenshots.
+The team's main objective is to develop computational algorithms applied to autonomous robots, using techniques of artificial intelligence and computer vision. This code was desenvolver for the ROSI CHALLENGE simulation 2019.
 
-_Para mais exemplos, consulte a [Wiki][wiki]._ 
+## Instructions
 
-## Configuração para Desenvolvimento
+* Press button 10 (depends on your control configuration) to record data and training the - (Convolutional Neural Network) CNN
+* Press button 9 (keep pressing to running the model)
 
-Descreva como instalar todas as dependências para desenvolvimento e como rodar um test-suite automatizado de algum tipo. Se necessário, faça isso para múltiplas plataformas.
+## Installation
 
-```sh
-make install
-npm test
-```
+* Tensorflow version 1.14.0
+* Keras version 2.2.5
 
-## Histórico de lançamentos
-
-* 0.2.1
-    * MUDANÇA: Atualização de docs (código do módulo permanece inalterado)
-* 0.2.0
-    * MUDANÇA: Remove `setDefaultXYZ()`
-    * ADD: Adiciona `init()`
-* 0.1.1
-    * CONSERTADO: Crash quando chama `baz()` (Obrigado @NomeDoContribuidorGeneroso!)
-* 0.1.0
-    * O primeiro lançamento adequado
-    * MUDANÇA: Renomeia `foo()` para `bar()`
-* 0.0.1
-    * Trabalho em andamento
-
-## Meta
-
-Seu Nome – [@SeuNome](https://twitter.com/...) – SeuEmail@exemplo.com
-
-Distribuído sob a licença XYZ. Veja `LICENSE` para mais informações.
-
-[https://github.com/yourname/github-link](https://github.com/othonalberto/)
 
 ## Contributing
 
-1. Faça o _fork_ do projeto (<https://github.com/yourname/yourproject/fork>)
-2. Crie uma _branch_ para sua modificação (`git checkout -b feature/fooBar`)
-3. Faça o _commit_ (`git commit -am 'Add some fooBar'`)
-4. _Push_ (`git push origin feature/fooBar`)
-5. Crie um novo _Pull Request_
 
-[npm-image]: https://img.shields.io/npm/v/datadog-metrics.svg?style=flat-square
-[npm-url]: https://npmjs.org/package/datadog-metrics
-[npm-downloads]: https://img.shields.io/npm/dm/datadog-metrics.svg?style=flat-square
-[travis-image]: https://img.shields.io/travis/dbader/node-datadog-metrics/master.svg?style=flat-square
-[travis-url]: https://travis-ci.org/dbader/node-datadog-metrics
-[wiki]: https://github.com/seunome/seuprojeto/wiki
+
+## Team
+
+Institutions: Federal Institute of Paraiba - IFPB - (Cajazeiras) and Federal Institute of Bahia - IFBA (Vitoria da Conquista).
+* Raphaell Maciel de Sousa (team leader/IFPB)
+* Gerberson Felix da Silva (IFPB)	
+* Jean Carlos Palácio Santos (IFBA)
+* Rafael Silva Nogueira Pacheco (IFBA)
+* Michael Botelho Santana (IFBA)
+* Sérgio Ricardo Ferreira Andrade Júnior (IFBA)
+* Lucas dos Santos Ribeiro (IFBA)
+* Félix Santana Brito (IFBA)
+* José Alberto Diaz Amado (IFBA)
+
+
+## License
+
+Copyright (c) ForROS, 2019.
+
