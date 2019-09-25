@@ -56,15 +56,49 @@ model2 = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/modelLad
 model2._make_predict_function()
 
 ###############################################################################################################################
-#	Dependences
+#	Instructions
 ###############################################################################################################################
+'''
+1. Copy the follow files in the script folder:
+rosi_joy.py # Rosi node
+model.h # Trainned CNN model to avoid obstacles
+modelLadder.h # Trainned CNN model to go up the stairs
+model.py # To train a new CNN model
 
-# Numpy version<1.17
-#pip2 install "numpy<1.17"
-# Tensorflow version 1.14.0
-#pip2 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.14.0-cp27-none-linux_x86_64.whl
-# Keras version 2.2.5
-#pip2 install keras==2.2.5
+2. Now, create the follow folders in the script folder:
+rgb_data # To save data for training a new CNN model
+robotCommands # To sabe the xls file with the motors traction commands
+map # To save the GPS tracking
+
+3. Replace your own paths in the Rosi node 
+model1 = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/model.h5') # Replace with your path folder
+model2 = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/modelLadder.h5') # Replace with your path folder
+path_to_imageName1 = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/'+imageName1+'/'   # Replace with your path folder
+path_to_imageName2 = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/'+imageName2+'/'   # Replace with your path folder
+path_to_folder = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/robotCommands/'        # Replace with your path folder
+path_to_folder = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/map/' # Replace with your path folder
+plt.savefig('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/map/map.png') # Replace with your path folder
+
+3. Install the dependences:
+
+pip2 install "numpy<1.17" # Numpy version<1.17
+pip2 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.14.0-cp27-none-linux_x86_64.whl # Tensorflow version 1.14.0
+pip2 install keras==2.2.5 # Keras version 2.2.5
+
+4. Open a bash terminal and tipe the follow commands:
+roscore # start a ROS master
+
+4.1 In a new bash tab:
+vrep # to open the vrep simulator
+
+4.2 In a new bash tab:
+cd catkin_ws # open your catkin workspace
+source deve/setup.bash # source the path
+roslaunch rosi_defy rosi_joy.launch --screen # start the Rosi node
+
+5. Load the vrep scene and start the simulation
+
+'''
 
 class RosiNodeClass():
 
@@ -593,12 +627,13 @@ class RosiNodeClass():
 		img_out_preprocessed = self.preprocess(image_array)
 
 		# 3. Counting routine to wait robot being ready to go
-		if self.autoModeStart == True:# and self.contStart < 301:
+		if self.autoModeStart == True:
 			self.contStart = self.contStart + 1
 			print("Almost there...", self.contStart)
 
 		# 4. Call function to predict the traction commands
-		offset_lap = 2350 # count reference to start a new model to up the stairs
+		# These counter values were adjusted to get the correct timing to execute the tasks
+		offset_lap = 2350 # count reference to start a new CNN model. Use offset_lap = 630 to go up the ramp in the first lap
 		# 4.1. Robot start position 
 		if self.contStart >= 0 and self.contStart < 300:
 			print("####1####")
@@ -658,17 +693,18 @@ class RosiNodeClass():
 				self.steering_angle = [[2.5, 2.5, 2.5, 2.5]]
 				self.state = True
 
-			if self.cx >= 185 and self.cx <= 192:
+			if self.cx >= 182 and self.cx <= 192:
 				self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 				self.state2 = True
 				self.state3 = True
+				self.contStart = self.contStart + 1
 
 			if self.state3 == True:
 				self.ang = self.ang - 1.0 
 				self.pub_roll_arm_position([-90.0, self.ang, 10.0, 60.0, 90.0, 0.0])
 				if abs(self.ang) >= 50:
 					self.ang = -50 
-				print("ang:", self.ang)				
+				print("ang:", self.ang)						
 
 		# 4.9. Stop motors
 		if self.contStart >= 1100 + offset_lap and self.contStart < 1200 + offset_lap: 
@@ -679,31 +715,17 @@ class RosiNodeClass():
 		if self.contStart >= 1200 + offset_lap and self.contStart < 1380 + offset_lap: 
 			print("####9####")
 
-			if self.state3 == True:
-				self.steering_angle = [[-6.0, -6.0, -6.0, -6.0]]
-				self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-
-			else:
-				self.steering_angle = [[-8.0, -8.0, -8.0, -8.0]]
-				self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+			self.steering_angle = [[-8.0, -8.0, -8.0, -8.0]]
+			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
 		# 4.11. Start predictions moving back to find rolls
-		if self.contStart >= 1380 + offset_lap and self.contStart <= 1480 + offset_lap:
+		if self.contStart >= 1380 + offset_lap and self.contStart < 1480 + offset_lap:
 			print("####10####")
-			#self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+			self.steering_angle = [[-2.0, -2.0, -2.0, -2.0]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-			self.steering_angle = -model1.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
 	
-		# 4.12. Stop motors
-		if self.contStart >= 1480 + offset_lap:
-			print("####11####")
-			#self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
-			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-
 			if self.state4 == True:
-				self.steering_angle = -model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
-
-			if self.contStart >=1650 + offset_lap:
+	
 				self.rolls_detection()
 
 				if self.cxRoll >= 180 and self.cxRoll <= 192 and self.state4 == True:
@@ -711,6 +733,12 @@ class RosiNodeClass():
 					self.state4 = False
 					print("Stop")
 	
+		# 4.12. Stop robot
+		if self.contStart >= 1480 + offset_lap: 
+			print("####11####")
+			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+			print("That's all!!!!! Thanks!!!! IFPB and IFBA")
+
 		# 5. Call save functions for tranning the CNN
 		if self.save_image_flag:
 			self.save_image('rgb_data', self.concatImage, self.countImageRGB)
