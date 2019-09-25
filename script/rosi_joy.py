@@ -574,8 +574,9 @@ class RosiNodeClass():
 			else:
 				pass
 
-		cv2.imshow("ROSI Rolls Detection", color_select)
-		cv2.waitKey(1)
+		# 6. Uncomment to display the image 
+		#cv2.imshow("ROSI Rolls Detection", color_select)
+		#cv2.waitKey(1)
 		return None
 
 	def put_image_together(self):
@@ -657,7 +658,7 @@ class RosiNodeClass():
 				self.steering_angle = [[2.5, 2.5, 2.5, 2.5]]
 				self.state = True
 
-			if self.cx >= 190 and self.cx <= 192:
+			if self.cx >= 185 and self.cx <= 192:
 				self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 				self.state2 = True
 				self.state3 = True
