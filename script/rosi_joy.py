@@ -56,13 +56,15 @@ model2 = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/modelLad
 model2._make_predict_function()
 
 ###############################################################################################################################
-#	Instructions
+#	Dependences
 ###############################################################################################################################
 
-# Press button 10 (depends on your control configuration) to record data and training the (Convolutional Neural Network) CNN
-# Press button 9 (keep pressing to running the model)
+# Numpy version<1.17
+#pip2 install "numpy<1.17"
 # Tensorflow version 1.14.0
+#pip2 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.14.0-cp27-none-linux_x86_64.whl
 # Keras version 2.2.5
+#pip2 install keras==2.2.5
 
 class RosiNodeClass():
 
@@ -89,19 +91,14 @@ class RosiNodeClass():
 		self.camera_image = None
 		self.camera_image_depth = None
 		self.bridge = CvBridge()
-		self.velodyneOut = None
-		self.hokuyoOut = None
 		self.robotMovement = None
 		self.tractionCommand = None
 		self.countImageDepth = 0
 		self.countImageRGB = 0
 		self.flag = "w"
-		self.velodyne = None
 		self.save_image_flag = False #Flag to save image
 		self.steering_angle = None
-		self.autoModeStart = True #Default False
-		self.countHokuyo = 0
-		self.mediaVector = 0
+		self.autoModeStart = True #Set "True" for autonomous mode or "False" to select by joystick
 		self.moveArm = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 		self.camera_image_arm = None
 		self.img_out_arm = None
@@ -111,10 +108,8 @@ class RosiNodeClass():
 		self.offset = 0 # Used to create dataset
 		self.arm_joint = []
 		self.thetaAll = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # in deg
-		self.selectFunction = 0
 		self.jointSelect = 0
 		self.thetaJoint = 0
-		self.resetArm = 0
 		self.latitudes = []
 		self.longitudes = []
 		self.gpsInc = 0
@@ -127,8 +122,10 @@ class RosiNodeClass():
 		self.state = False
 		self.state2 = False 
 		self.state3 = False
+		self.state4 = True
 		self.ang = 0
 		self.cx = 0
+		self.cxRoll = 0
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -280,8 +277,8 @@ class RosiNodeClass():
 			plt.legend(framealpha=1, frameon=True);
 		
 		# 6. plot functions
-		cv2.imshow("ROSI Color Detection", img)
-		cv2.waitKey(1)
+		#cv2.imshow("ROSI Color Detection", img)
+		#cv2.waitKey(1)
 		return None
 
 	def move_arm_joint(self, theta, joint):
@@ -356,7 +353,7 @@ class RosiNodeClass():
 			filewriter = csv.writer(csvfile, delimiter=',',quotechar='|', quoting=csv.QUOTE_MINIMAL)
 			file_name = path_to_imageName1+imageName1+'_'+str(countImage+self.offset)+'.jpg'
 			file_name_depth = path_to_imageName2+imageName2+'_'+str(countImage+self.offset)+'.jpg'
-			filewriter.writerow([path_to_imageName1+file_name, path_to_imageName2+file_name_depth, self.tractionCommand[0][0], 								self.tractionCommand[1][0], self.tractionCommand[2][0], 							self.tractionCommand[3][0]])#, self.mediaVector])
+			filewriter.writerow([path_to_imageName1+file_name, path_to_imageName2+file_name_depth, self.tractionCommand[0][0], 								self.tractionCommand[1][0], self.tractionCommand[2][0], 							self.tractionCommand[3][0]])
 		return None
 
 	def save_map_csv(self, latitude, longitude):
@@ -400,14 +397,16 @@ class RosiNodeClass():
 		axes_ang = msg.axes[0]
 		self.trigger_left = msg.axes[2]
 		self.trigger_right = msg.axes[3]
-		button_L = msg.buttons[4]
-		button_R = msg.buttons[5]
-		record = msg.buttons[10]
-		self.autoMode = self.autoMode + msg.buttons[9]
-		self.moveJointLeft = msg.buttons[6]
-		self.moveJointRight = msg.buttons[7]
-		self.selectFunction = msg.buttons[14]
-		self.resetArm = msg.buttons[15]
+		# Uncomment next 2 lines to control back and front arms by joystick 		
+		#button_L = msg.buttons[4]
+		#button_R = msg.buttons[5]	
+		# Comment next 2 lines to control back and front arms by joystick 		
+		button_L = 0 #msg.buttons[4]
+		button_R = 0 #msg.buttons[5]
+		record = msg.buttons[10] # Used to record data for training the CNN
+		# To choose autonomous mode using joystick, uncomment next line and 
+		# set variable self.autoModeStart to False in the list of variables
+		#self.autoMode = self.autoMode + msg.buttons[9]
 
 		if record == 1:
 			self.save_image_flag = True
@@ -519,6 +518,66 @@ class RosiNodeClass():
 
 		return None
 
+	def rolls_detection(self):
+		'''
+		This routine is used to detect fire in the vrep simulator. For this purpose,
+		it was used a simple color detections function.
+		Reference: https://opencv.org/
+		'''
+		color_select= np.copy(self.img_out_arm)
+
+		red_threshold = 210
+		green_threshold = 210
+		blue_threshold = 210
+
+		rgb_threshold = [red_threshold, green_threshold, blue_threshold]
+
+		color_thresholds = (color_select[:,:,0] < rgb_threshold[0]) | \
+					(color_select[:,:,1] < rgb_threshold[1]) | \
+					(color_select[:,:,2] < rgb_threshold[2])
+
+		color_select[color_thresholds] = [0,0,0]
+		color_select[~color_thresholds] = [0,255,0]
+	
+		# 1. Define color mask (yellow detection)
+		light_color = (70, 255, 255)
+		dark_color = (50, 100, 100)
+
+		# 2. Converting BGR to HSV color space
+		hsv_img = cv2.cvtColor(color_select, cv2.COLOR_BGR2HSV)
+
+		# 3. Applying the color mask
+		mask = cv2.inRange(hsv_img, dark_color, light_color)
+		result = cv2.bitwise_and(color_select, color_select, mask=mask)
+
+		# 4. Using a gaussian function to extract noises
+		kernel_size = 5
+		result = cv2.GaussianBlur(result,(kernel_size, kernel_size), 0)
+
+		# 5. Find contours
+		_, contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)	
+		for contour in contours:
+			if cv2.contourArea(contour) > 5000:
+			        cv2.drawContours(color_select, contour, -1, (0, 0, 255), 2)	
+				# Find center of contours
+				M = cv2.moments(contour)
+				if M['m00'] > 0:
+					self.cxRoll = int(M['m10']/M['m00'])
+					cy = int(M['m01']/M['m00'])
+					# draw the contour and center of the shape on the image
+					cv2.circle(color_select, (self.cxRoll, cy), 7, (255, 255, 255), -1)
+					cv2.putText(color_select, "center", (self.cxRoll - 20, cy - 20),
+						cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+				else:
+					pass	
+
+			else:
+				pass
+
+		cv2.imshow("ROSI Rolls Detection", color_select)
+		cv2.waitKey(1)
+		return None
+
 	def put_image_together(self):
 		'''
 		This function is used to concatenate images from kinect and ur5toolCam.
@@ -549,35 +608,35 @@ class RosiNodeClass():
 		if self.contStart >= 300 and self.contStart < offset_lap: 
 			print("####2####")
 			self.steering_angle = model1.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
-		
-		# 4.2. Start prediction model 1
+
+		# 4.3. Start prediction model 1
 		if self.contStart >= 850 and self.contStart < 860: 
 			print("####2.1####")
 			self.steering_angle = model1.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
 			# Just a small trajectory correction to help the CNN avoid obstacle
 			self.steering_angle = self.steering_angle * [[1.0, 1.0, 1.05, 1.05]] 
 
-		# 4.3. Start prediction model 2
+		# 4.4. Start prediction model 2
 		if self.contStart >= offset_lap and self.contStart < 430 + offset_lap:
 			print("####3####")
 			self.steering_angle = model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
 			self.arm_front_rotSpeed = 0 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = 0 * self.max_arms_rotational_speed
 	
-		# 4.4. Front arm go down and stop motors	
+		# 4.5. Front arm go down and stop motors	
 		if self.contStart >= 430 + offset_lap and self.contStart < 530 + offset_lap:
 			print("####4####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.arm_front_rotSpeed = 1.8 * self.max_arms_rotational_speed
 
-		# 4.5. Climbing stairs
+		# 4.6. Climbing stairs
 		if self.contStart >= 530 + offset_lap and self.contStart < 590 + offset_lap:
 			print("####5####")
 			self.steering_angle = [[14.0, 14.0, 14.0, 14.0]]
 			self.arm_front_rotSpeed = -0.8 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed
 
-		# 4.6. Stop motors
+		# 4.7. Stop motors
 		if self.contStart >= 590 + offset_lap and self.contStart < 730 + offset_lap: 
 			print("####6####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
@@ -585,7 +644,7 @@ class RosiNodeClass():
 			self.arm_front_rotSpeed = 0.5 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = 0.2 * self.max_arms_rotational_speed
 
-		# 4.7. Move foward or get rolls
+		# 4.8. Move foward or get rolls
 		if self.contStart >= 730 + offset_lap and self.contStart < 1100 + offset_lap: 
 			print("####7####")
 
@@ -598,7 +657,7 @@ class RosiNodeClass():
 				self.steering_angle = [[2.5, 2.5, 2.5, 2.5]]
 				self.state = True
 
-			if self.cx >= 180 and self.cx <= 192:
+			if self.cx >= 190 and self.cx <= 192:
 				self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 				self.state2 = True
 				self.state3 = True
@@ -610,23 +669,47 @@ class RosiNodeClass():
 					self.ang = -50 
 				print("ang:", self.ang)				
 
-		# 4.8. Stop motors
+		# 4.9. Stop motors
 		if self.contStart >= 1100 + offset_lap and self.contStart < 1200 + offset_lap: 
 			print("####8####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 
-		# 4.9. Move back
+		# 4.10. Move back
 		if self.contStart >= 1200 + offset_lap and self.contStart < 1380 + offset_lap: 
 			print("####9####")
-			self.steering_angle = [[-8.0, -8.0, -8.0, -8.0]]
+
+			if self.state3 == True:
+				self.steering_angle = [[-6.0, -6.0, -6.0, -6.0]]
+				self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+			else:
+				self.steering_angle = [[-8.0, -8.0, -8.0, -8.0]]
+				self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+		# 4.11. Start predictions moving back to find rolls
+		if self.contStart >= 1380 + offset_lap and self.contStart <= 1480 + offset_lap:
+			print("####10####")
+			#self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+			self.steering_angle = -model1.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
+	
+		# 4.12. Stop motors
+		if self.contStart >= 1480 + offset_lap:
+			print("####11####")
+			#self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
-		# 4.10. Stop motors
-		if self.contStart >= 1380 + offset_lap:
-			print("####10####")
-			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
-			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-		
+			if self.state4 == True:
+				self.steering_angle = -model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
+
+			if self.contStart >=1650 + offset_lap:
+				self.rolls_detection()
+
+				if self.cxRoll >= 180 and self.cxRoll <= 192 and self.state4 == True:
+					self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+					self.state4 = False
+					print("Stop")
+	
 		# 5. Call save functions for tranning the CNN
 		if self.save_image_flag:
 			self.save_image('rgb_data', self.concatImage, self.countImageRGB)
@@ -678,6 +761,7 @@ class RosiNodeClass():
 		if self.gpsInc == 20:
 			self.latitudes.append(self.latitude)
 			self.longitudes.append(self.longitude)
+			plt.figure(1)
 			plt.title("GPS tracking")
 			plt.plot(self.latitudes, self.longitudes, color='b', label='Path')
 			plt.xlabel('Latitude')
