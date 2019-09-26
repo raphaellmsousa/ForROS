@@ -157,7 +157,12 @@ class RosiNodeClass():
 		self.state2 = False 
 		self.state3 = False
 		self.state4 = True
+		self.state5 = True
+		self.state6 = False
+		self.state7 = True
+		self.state8 = False
 		self.ang = 0
+		self.ang2 = 0
 		self.cx = 0
 		self.cxRoll = 0
 
@@ -609,8 +614,8 @@ class RosiNodeClass():
 				pass
 
 		# 6. Uncomment to display the image 
-		#cv2.imshow("ROSI Rolls Detection", color_select)
-		#cv2.waitKey(1)
+		cv2.imshow("ROSI Rolls Detection", color_select)
+		cv2.waitKey(1)
 		return None
 
 	def put_image_together(self):
@@ -633,7 +638,9 @@ class RosiNodeClass():
 
 		# 4. Call function to predict the traction commands
 		# These counter values were adjusted to get the correct timing to execute the tasks
-		offset_lap = 2350 # count reference to start a new CNN model. Use offset_lap = 630 to go up the ramp in the first lap
+		# Use offset_lap = 630 to go up the ramp in the first lap
+		offset_lap = 630
+		#offset_lap = 2350 
 		# 4.1. Robot start position 
 		if self.contStart >= 0 and self.contStart < 300:
 			print("####1####")
@@ -658,7 +665,13 @@ class RosiNodeClass():
 			self.steering_angle = model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
 			self.arm_front_rotSpeed = 0 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = 0 * self.max_arms_rotational_speed
-	
+
+		if self.contStart >= 280 + offset_lap and self.contStart < 350 + offset_lap:
+			print("####3.1####")
+			self.steering_angle = model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
+			self.steering_angle = self.steering_angle * [[1.03, 1.03, 1.0, 1.0]]	
+
+
 		# 4.5. Front arm go down and stop motors	
 		if self.contStart >= 430 + offset_lap and self.contStart < 530 + offset_lap:
 			print("####4####")
@@ -669,23 +682,23 @@ class RosiNodeClass():
 		if self.contStart >= 530 + offset_lap and self.contStart < 590 + offset_lap:
 			print("####5####")
 			self.steering_angle = [[14.0, 14.0, 14.0, 14.0]]
-			self.arm_front_rotSpeed = -0.8 * self.max_arms_rotational_speed
+			self.arm_front_rotSpeed = -0.4 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed
 
 		# 4.7. Stop motors
-		if self.contStart >= 590 + offset_lap and self.contStart < 730 + offset_lap: 
+		if self.contStart >= 590 + offset_lap and self.contStart < 650 + offset_lap: 
 			print("####6####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
-			self.pub_roll_arm_position([-90.0, 10.0, 0.0, 0.0, 90.0, 0.0])
+			self.pub_roll_arm_position([-90.0, 0.0, 0.0, 20.0, 90.0, 0.0])
 			self.arm_front_rotSpeed = 0.5 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = 0.2 * self.max_arms_rotational_speed
 
 		# 4.8. Move foward or get rolls
-		if self.contStart >= 730 + offset_lap and self.contStart < 1100 + offset_lap: 
+		if self.contStart >= 650 + offset_lap and self.contStart < 1100 + offset_lap: 
 			print("####7####")
 
 			if self.state == False:
-				self.steering_angle = [[3.0, 3.0, 3.0, 3.0]]
+				self.steering_angle = [[3.2, 3.2, 3.0, 3.0]]
 				self.arm_front_rotSpeed = 0.0 * self.max_arms_rotational_speed
 				self.arm_rear_rotSpeed = 0.0 * self.max_arms_rotational_speed
 							
@@ -693,18 +706,25 @@ class RosiNodeClass():
 				self.steering_angle = [[2.5, 2.5, 2.5, 2.5]]
 				self.state = True
 
-			if self.cx >= 182 and self.cx <= 192:
+			if self.cx >= 180 and self.cx <= 185 and self.state8 == False:
 				self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 				self.state2 = True
 				self.state3 = True
-				self.contStart = self.contStart + 1
 
 			if self.state3 == True:
-				self.ang = self.ang - 1.0 
-				self.pub_roll_arm_position([-90.0, self.ang, 10.0, 60.0, 90.0, 0.0])
+				self.ang = self.ang - 0.5 
+				self.pub_roll_arm_position([-90.0, self.ang, 0.0, 40.0, 90.0, 0.0])
 				if abs(self.ang) >= 50:
-					self.ang = -50 
-				print("ang:", self.ang)						
+					self.ang = -50 	
+					self.state3 = False	
+					self.state7 = False
+					self.state8 = True
+
+			if self.state7 == False:
+				self.ang = self.ang + 0.05 
+				self.pub_roll_arm_position([-90.0, self.ang, 0.0, 40.0, 90.0, 0.0])
+				if abs(self.ang) >= 0:
+					self.ang = 0 	
 
 		# 4.9. Stop motors
 		if self.contStart >= 1100 + offset_lap and self.contStart < 1200 + offset_lap: 
@@ -712,31 +732,42 @@ class RosiNodeClass():
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 
 		# 4.10. Move back
-		if self.contStart >= 1200 + offset_lap and self.contStart < 1380 + offset_lap: 
+		if self.contStart >= 1200 + offset_lap and self.contStart < 1350 + offset_lap: 
 			print("####9####")
 
-			self.steering_angle = [[-8.0, -8.0, -8.0, -8.0]]
+			self.steering_angle = [[-8.0, -8.0, -8.15, -8.15]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
 		# 4.11. Start predictions moving back to find rolls
-		if self.contStart >= 1380 + offset_lap and self.contStart < 1480 + offset_lap:
+		if self.contStart >= 1350 + offset_lap and self.contStart < 1500 + offset_lap:
 			print("####10####")
-			self.steering_angle = [[-2.0, -2.0, -2.0, -2.0]]
-			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+			if self.state5 == True:
+				self.steering_angle = [[-2.0, -2.0, -2.0, -2.0]]
+				self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 	
 			if self.state4 == True:
 	
 				self.rolls_detection()
 
-				if self.cxRoll >= 180 and self.cxRoll <= 192 and self.state4 == True:
+				if self.cxRoll >= 180 and self.cxRoll <= 195 and self.state4 == True:
 					self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
-					self.state4 = False
+					#self.state4 = False
+					self.state5 = False
+					self.state6 = True
 					print("Stop")
+
+				if self.state6 == True:
+					self.ang2 = self.ang2 - 0.5 
+					self.pub_roll_arm_position([-90.0, self.ang2, -10.0, 40.0, 90.0, 0.0])
+					if abs(self.ang) >= 90:
+						self.ang = -90 	
 	
 		# 4.12. Stop robot
-		if self.contStart >= 1480 + offset_lap: 
+		if self.contStart >= 1500 + offset_lap: 
 			print("####11####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 			print("That's all!!!!! Thanks!!!! IFPB and IFBA")
 
 		# 5. Call save functions for tranning the CNN
@@ -769,6 +800,11 @@ class RosiNodeClass():
 			- UR-5 Force/Torque sensor output. It gives two vector of linear 
 			and angular forces and torques, respectively. Axis order is x, y, z.
 		'''
+		torque = msg.twist.linear.z
+		if abs(torque) >=0.5:
+			self.state6 = False
+			self.state3 = False
+
 		#print("Torque Sensor Test", msg)
 		return None
 	
