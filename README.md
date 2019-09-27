@@ -27,7 +27,7 @@ The team's main goal is to develop computational algorithms applied to autonomou
 
 https://github.com/filRocha/rosiChallenge-sbai2019
 
-##### 2. Now, download our repositorty and copy the follow files in the "script" folder (in the rosi_defy folder):
+##### 2. Now, download our repositorty and copy the follow files in the "script" folder (in the rosi_defy folder, check this folder in the step 1):
 - [ ] *rosi_joy.py* # Rosi node
 - [ ] *model.h* # Trainned CNN model to avoid obstacles
 - [ ] *modelLadder.h* # Trainned CNN model to go up the stairs
