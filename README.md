@@ -64,7 +64,7 @@ The team's main goal is to develop computational algorithms applied to autonomou
 
 ## Approach
 
-A detailed description of our team approach has been provided in the jupyter notebook file valeNeuralNetwork.ipynb 
+A detailed description of our team's approach has been provided in the jupyter notebook file valeNeuralNetwork.ipynb 
 
 ## Team
 
