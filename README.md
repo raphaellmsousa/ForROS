@@ -34,7 +34,7 @@ The team's main goal is to develop computational algorithms applied to autonomou
 - [ ] *robotCommands* # To sabe the xls file with the motors traction commands
 - [ ] *map* # To save the GPS tracking
 
-##### 3. Replace your own paths in the Rosi node 
+##### 3. Replace your own paths in the Rosi node (rosi_joy.py file) 
 - [ ] model1 = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/model.h5') 
 - [ ] model2 = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/modelLadder.h5') 
 - [ ] path_to_imageName1 = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/'+imageName1+'/' 
