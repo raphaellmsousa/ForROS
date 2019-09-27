@@ -29,7 +29,7 @@ The team's main goal is to develop computational algorithms applied to autonomou
 - [ ] *modelLadder.h* # Trainned CNN model to go up the stairs
 - [ ] *model.py* # To train a new CNN model
 
-##### 2. Now, create the follow folders in the script folder:
+##### 2. Now, create the follow folders in the script folder (this is used to create your own dataset):
 - [ ] *rgb_data* # To save data for training a new CNN model
 - [ ] *robotCommands* # To sabe the xls file with the motors traction commands
 - [ ] *map* # To save the GPS tracking
