@@ -19,11 +19,15 @@ CHALLENGE ROSI 2019 Competition Team</h4>
 
 ## Key Features
 
-The team's main goal is to develop computational algorithms applied to autonomous robots using techniques of artificial intelligence and computer vision. This code was desenvolver for the ROSI CHALLENGE simulation 2019.
+The team's main goal is to develop computational algorithms applied to autonomous robots using techniques of artificial intelligence and computer vision. This code was desenvolver for the ROSI CHALLENGE 2019.
 
 ## Instructions
 
-##### 1. Copy the follow files in the script folder:
+##### 0. First of all, follow all instructions to install vrep simulator for the ROSI Challenge 2019, as you can find in:
+
+https://github.com/filRocha/rosiChallenge-sbai2019
+
+##### 1. Now, download our repositorty and copy the follow files in the "script" folder (in the rosi_defy folder):
 - [ ] *rosi_joy.py* # Rosi node
 - [ ] *model.h* # Trainned CNN model to avoid obstacles
 - [ ] *modelLadder.h* # Trainned CNN model to go up the stairs
@@ -44,6 +48,8 @@ The team's main goal is to develop computational algorithms applied to autonomou
 - [ ] plt.savefig('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/map/map.png') 
 
 ##### 4. Install the dependences:
+Obs.: as we are using python 2.7, you must use pip2 to install the follow dependences.
+
 - `$ sudo apt install python-pip` # pip2 install
 - `$ pip2 install "numpy<1.17" ` # Numpy version<1.17
 - `$ pip2 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.14.0-cp27-none-linux_x86_64.whl` # Tensorflow version 1.14.0
