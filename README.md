@@ -19,12 +19,11 @@ CHALLENGE ROSI 2019 Competition Team</h4>
 
 ## Key Features
 
-The team's main objective is to develop computational algorithms applied to autonomous robots, using techniques of artificial intelligence and computer vision. This code was desenvolver for the ROSI CHALLENGE simulation 2019.
+The team's main goal is to develop computational algorithms applied to autonomous robots using techniques of artificial intelligence and computer vision. This code was desenvolver for the ROSI CHALLENGE simulation 2019.
 
 ## Instructions
 
 ##### 1. Copy the follow files in the script folder:
-- [ ] *valeNeuralNetwork.ipynb*  # Description of strategy used in competition
 - [ ] *rosi_joy.py* # Rosi node
 - [ ] *model.h* # Trainned CNN model to avoid obstacles
 - [ ] *modelLadder.h* # Trainned CNN model to go up the stairs
@@ -45,7 +44,7 @@ The team's main objective is to develop computational algorithms applied to auto
 - [ ] plt.savefig('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/map/map.png') 
 
 
-##### 4. Open a bash terminal and tipe the follow commands:
+##### 4. Open a bash terminal and type the follow commands:
 - `$ roscore` # start a ROS master
 
 ###### 4.1 In a new bash tab:
@@ -64,7 +63,9 @@ The team's main objective is to develop computational algorithms applied to auto
 
 ##### 6. Load the vrep scene and start the simulation
 
+## Approach
 
+A detailed description of our team approach has been provided in the jupyter notebook file valeNeuralNetwork.ipynb 
 
 ## Team
 
