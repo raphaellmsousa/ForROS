@@ -1,58 +1,78 @@
-<h1 align="center">
-  <br>
-  <a href="https://www.overleaf.com"><img src="https://user-images.githubusercontent.com/31168586/65396910-dbd1f300-dd81-11e9-9a98-8f4f329461e0.png" alt="Overleaf" width="400"></a>
-</h1>
+# Product Name
+> Short blurb about what your product does.
 
-<h4 align="center">
+[![NPM Version][npm-image]][npm-url]
+[![Build Status][travis-image]][travis-url]
+[![Downloads Stats][npm-downloads]][npm-url]
 
-CHALLENGE ROSI 2019 Competition Team</h4>
+One to two paragraph statement about your product and what it does.
 
-<p align="center">
-  <a href="#key-features">Key Features</a> •
-  <a href="https://github.com/overleaf/overleaf/wiki">Wiki</a> •
-  <a href="#Instructions">Instructions</a> •
-  <a href="#Instructions">Installation</a> •
-  <a href="#contributing">Contributing</a> •
-  <a href="#Team">Team</a> •
-  <a href="#license">License</a>
-</p>
-
-<a href="https://www.overleaf.com"><img src="https://user-images.githubusercontent.com/31168586/65396913-e096a700-dd81-11e9-9b02-68e3119673cd.png" alt="Overleaf" ></a>
-
-## Key Features
-
-The team's main objective is to develop computational algorithms applied to autonomous robots, using techniques of artificial intelligence and computer vision. This code was desenvolver for the ROSI CHALLENGE simulation 2019.
-
-## Instructions
-
-* Press button 10 (depends on your control configuration) to record data and training the - (Convolutional Neural Network) CNN
-* Press button 9 (keep pressing to running the model)
+![](header.png)
 
 ## Installation
 
-* Tensorflow version 1.14.0
-* Keras version 2.2.5
+OS X & Linux:
 
+```sh
+npm install my-crazy-module --save
+```
+
+Windows:
+
+```sh
+edit autoexec.bat
+```
+
+## Usage example
+
+A few motivating and useful examples of how your product can be used. Spice this up with code blocks and potentially more screenshots.
+
+_For more examples and usage, please refer to the [Wiki][wiki]._
+
+## Development setup
+
+Describe how to install all development dependencies and how to run an automated test-suite of some kind. Potentially do this for multiple platforms.
+
+```sh
+make install
+npm test
+```
+
+## Release History
+
+* 0.2.1
+    * CHANGE: Update docs (module code remains unchanged)
+* 0.2.0
+    * CHANGE: Remove `setDefaultXYZ()`
+    * ADD: Add `init()`
+* 0.1.1
+    * FIX: Crash when calling `baz()` (Thanks @GenerousContributorName!)
+* 0.1.0
+    * The first proper release
+    * CHANGE: Rename `foo()` to `bar()`
+* 0.0.1
+    * Work in progress
+
+## Meta
+
+Your Name – [@YourTwitter](https://twitter.com/dbader_org) – YourEmail@example.com
+
+Distributed under the XYZ license. See ``LICENSE`` for more information.
+
+[https://github.com/yourname/github-link](https://github.com/dbader/)
 
 ## Contributing
 
+1. Fork it (<https://github.com/yourname/yourproject/fork>)
+2. Create your feature branch (`git checkout -b feature/fooBar`)
+3. Commit your changes (`git commit -am 'Add some fooBar'`)
+4. Push to the branch (`git push origin feature/fooBar`)
+5. Create a new Pull Request
 
-
-## Team
-
-Institutions: Federal Institute of Paraiba - IFPB - (Cajazeiras) and Federal Institute of Bahia - IFBA (Vitoria da Conquista).
-* Raphaell Maciel de Sousa (team leader/IFPB)
-* Gerberson Felix da Silva (IFPB)	
-* Jean Carlos Palácio Santos (IFBA)
-* Rafael Silva Nogueira Pacheco (IFBA)
-* Michael Botelho Santana (IFBA)
-* Sérgio Ricardo Ferreira Andrade Júnior (IFBA)
-* Lucas dos Santos Ribeiro (IFBA)
-* Félix Santana Brito (IFBA)
-* José Alberto Diaz Amado (IFBA)
-
-
-## License
-
-Copyright (c) ForROS, 2019.
-
+<!-- Markdown link & img dfn's -->
+[npm-image]: https://img.shields.io/npm/v/datadog-metrics.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/datadog-metrics
+[npm-downloads]: https://img.shields.io/npm/dm/datadog-metrics.svg?style=flat-square
+[travis-image]: https://img.shields.io/travis/dbader/node-datadog-metrics/master.svg?style=flat-square
+[travis-url]: https://travis-ci.org/dbader/node-datadog-metrics
+[wiki]: https://github.com/yourname/yourproject/wiki
