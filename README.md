@@ -43,23 +43,22 @@ The team's main goal is to develop computational algorithms applied to autonomou
 - [ ] path_to_folder = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/map/' 
 - [ ] plt.savefig('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/map/map.png') 
 
-
-##### 4. Open a bash terminal and type the follow commands:
-- `$ roscore` # start a ROS master
-
-###### 4.1 In a new bash tab:
-- `$ vrep` # to open the vrep simulator
-
-###### 4.2 In a new bash tab:
-- `$ cd catkin_ws` # open your catkin workspace
-- `$ source deve/setup.bash` # source the path
-- `$ roslaunch rosi_defy rosi_joy.launch --screen` # start the Rosi node
-
-##### 5. Install the dependences:
+##### 4. Install the dependences:
 - `$ sudo apt install python-pip` # pip2 install
 - `$ pip2 install "numpy<1.17" ` # Numpy version<1.17
 - `$ pip2 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.14.0-cp27-none-linux_x86_64.whl` # Tensorflow version 1.14.0
 - `$ pip2 install keras==2.2.5` # Keras version 2.2.5
+
+##### 5. Open a bash terminal and type the follow commands:
+- `$ roscore` # start a ROS master
+
+###### 5.1 In a new bash tab:
+- `$ vrep` # to open the vrep simulator
+
+###### 5.2 In a new bash tab:
+- `$ cd catkin_ws` # open your catkin workspace
+- `$ source deve/setup.bash` # source the path
+- `$ roslaunch rosi_defy rosi_joy.launch --screen` # start the Rosi node
 
 ##### 6. Load the vrep scene and start the simulation
 
