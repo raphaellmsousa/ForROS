@@ -296,27 +296,28 @@ class RosiNodeClass():
 		# 5. Find contours
 		_, contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)	
 		for contour in contours:
-		        cv2.drawContours(img, contour, -1, (0, 0, 255), 2)	
-			self.fire = True
-			#print("Take care, fire detected!!")
-		
-			# Find center of contours
-			M = cv2.moments(contour)
-			if M['m00'] > 0:
-				self.cx = int(M['m10']/M['m00'])
-				cy = int(M['m01']/M['m00'])
-				# draw the contour and center of the shape on the image
-				cv2.circle(img, (self.cx, cy), 7, (255, 255, 255), -1)
-				cv2.putText(img, "center", (self.cx - 20, cy - 20),
-					cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+			if cv2.contourArea(contour) > 5000:
+		        	cv2.drawContours(img, contour, -1, (0, 0, 255), 2)	
+				# Find center of contours
+				M = cv2.moments(contour)
+				if M['m00'] > 0:
+					self.cx = int(M['m10']/M['m00'])
+					cy = int(M['m01']/M['m00'])
+					# draw the contour and center of the shape on the image
+					cv2.circle(img, (self.cx, cy), 7, (255, 255, 255), -1)
+					cv2.putText(img, "center", (self.cx - 20, cy - 20),
+						cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+				else:
+					pass	
 			else:
 				pass
+
 			# In case of fire detection, the GPS coordinates are sent to the map
 			plt.plot(self.latitude, self.longitude, color='r', marker="P", label="Fire")
 			plt.legend(framealpha=1, frameon=True);
 		
 		# 6. plot functions
-		#cv2.imshow("ROSI Color Detection", img)
+		#cv2.imshow("ROSI Fire Detection", img)
 		#cv2.waitKey(1)
 		return None
 
@@ -640,8 +641,8 @@ class RosiNodeClass():
 		# 4. Call function to predict the traction commands
 		# These counter values were adjusted to get the correct timing to execute the tasks
 		# Use offset_lap = 630 to go up the ramp in the first lap
-		offset_lap = 630
-		#offset_lap = 2350 
+		#offset_lap = 630
+		offset_lap = 2350 
 		# 4.1. Robot start position 
 		if self.contStart >= 0 and self.contStart < 300:
 			#print("####1####")
@@ -681,14 +682,14 @@ class RosiNodeClass():
 			self.arm_front_rotSpeed = 1.8 * self.max_arms_rotational_speed
 
 		# 4.7. Climbing stairs
-		if self.contStart >= 530 + offset_lap and self.contStart < 590 + offset_lap:
+		if self.contStart >= 530 + offset_lap and self.contStart < 600 + offset_lap:
 			#print("####5####")
-			self.steering_angle = [[14.0, 14.0, 14.0, 14.0]]
+			self.steering_angle = [[16.0, 16.0, 16.0, 16.0]]
 			self.arm_front_rotSpeed = -0.4 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed
 
 		# 4.8. Stop motors
-		if self.contStart >= 590 + offset_lap and self.contStart < 650 + offset_lap: 
+		if self.contStart >= 600 + offset_lap and self.contStart < 660 + offset_lap: 
 			#print("####6####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.pub_roll_arm_position([-90.0, 0.0, 0.0, 30.0, 90.0, 0.0])
@@ -696,7 +697,7 @@ class RosiNodeClass():
 			self.arm_rear_rotSpeed = 0.2 * self.max_arms_rotational_speed
 
 		# 4.9. Move foward or get rolls
-		if self.contStart >= 650 + offset_lap and self.contStart < 1030 + offset_lap: 
+		if self.contStart >= 660 + offset_lap and self.contStart < 1040 + offset_lap: 
 			#print("####7####")
 			if self.state == False:
 				self.steering_angle = [[3.2, 3.2, 3.0, 3.0]]
@@ -707,14 +708,18 @@ class RosiNodeClass():
 				self.steering_angle = [[2.5, 2.5, 2.5, 2.5]]
 				self.state = True
 
-			if self.cx >= 175 and self.cx <= 192 and self.state8 == False:
+			if self.cx >= 170 and self.cx <= 195 and self.state8 == False:
 				self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+				self.state = True
 				self.state2 = True
 				self.state3 = True
-				
+				self.state8 = True
+
 			if self.state3 == True:
 				self.ang = self.ang - 0.5 
+				self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 				self.pub_roll_arm_position([-90.0, self.ang, 0.0, 40.0, 90.0, 180.0])
+				self.state = True
 				self.state8 = True
 				if abs(self.ang) >= 50:
 					self.ang = -50 	
@@ -723,17 +728,18 @@ class RosiNodeClass():
 
 			if self.state7 == False:
 				self.ang = self.ang + 0.05 
+				self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 				self.pub_roll_arm_position([-90.0, self.ang, 0.0, 40.0, 90.0, 0.0])
 				if abs(self.ang) >= 0:
 					self.ang = 0 	
 
 		# 4.10. Stop motors
-		if self.contStart >= 1030 + offset_lap and self.contStart < 1050 + offset_lap: 
+		if self.contStart >= 1040 + offset_lap and self.contStart < 1060 + offset_lap: 
 			#print("####8####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 
 		# 4.11. Move back
-		if self.contStart >= 1050 + offset_lap and self.contStart < 1280 + offset_lap: 
+		if self.contStart >= 1060 + offset_lap and self.contStart < 1290 + offset_lap: 
 			#print("####9####")
 			if self.state8 == True:
 				self.steering_angle = [[-4.0, -4.0, -4.15, -4.15]]
@@ -744,7 +750,7 @@ class RosiNodeClass():
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
 		# 4.12. Start predictions moving back to find rolls
-		if self.contStart >= 1280 + offset_lap and self.contStart < 1420 + offset_lap:
+		if self.contStart >= 1290 + offset_lap and self.contStart < 1450 + offset_lap:
 			#print("####10####")
 			if self.state5 == True:
 				self.steering_angle = [[-2.0, -2.0, -2.0, -2.0]]
@@ -761,12 +767,13 @@ class RosiNodeClass():
 
 				if self.state6 == True:
 					self.ang2 = self.ang2 - 0.5 
+					self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 					self.pub_roll_arm_position([-90.0, self.ang2, -10.0, 40.0, 90.0, 0.0])
 					if abs(self.ang) >= 90:
 						self.ang = -90 	
 	
 		# 4.13. Stop robot and finish the tasks
-		if self.contStart >= 1420 + offset_lap: 
+		if self.contStart >= 1450 + offset_lap: 
 			#print("####11####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
