@@ -60,7 +60,7 @@ The team's main goal is to develop computational algorithms applied to autonomou
 - `$ source deve/setup.bash` # source the path
 - `$ roslaunch rosi_defy rosi_joy.launch --screen` # start the Rosi node
 
-##### 6. Load the vrep scene and start the simulation
+##### 6. Load the vrep scene and start simulation
 
 ## Approach
 
