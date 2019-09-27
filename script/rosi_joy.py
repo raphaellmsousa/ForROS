@@ -334,7 +334,7 @@ class RosiNodeClass():
 
 	def move_arm_all(self, theta):
 		'''
-		Take as input a vector of angles in deg and convert to rad
+		Take as input a vector of angles in deg and converts it to rad
 		Input: 
 			- theta (angle in deg)
 		'''
@@ -634,13 +634,14 @@ class RosiNodeClass():
 		# 3. Counting routine to wait robot being ready to go
 		if self.autoModeStart == True:
 			self.contStart = self.contStart + 1
-			print("Almost there...", self.contStart)
+			if self.state6 == False:
+				print("Almost there...", self.contStart)
 
 		# 4. Call function to predict the traction commands
 		# These counter values were adjusted to get the correct timing to execute the tasks
 		# Use offset_lap = 630 to go up the ramp in the first lap
-		#offset_lap = 630
-		offset_lap = 2350 
+		offset_lap = 630
+		#offset_lap = 2350 
 		# 4.1. Robot start position 
 		if self.contStart >= 0 and self.contStart < 300:
 			#print("####1####")
@@ -697,7 +698,6 @@ class RosiNodeClass():
 		# 4.9. Move foward or get rolls
 		if self.contStart >= 650 + offset_lap and self.contStart < 1030 + offset_lap: 
 			#print("####7####")
-
 			if self.state == False:
 				self.steering_angle = [[3.2, 3.2, 3.0, 3.0]]
 				self.arm_front_rotSpeed = 0.0 * self.max_arms_rotational_speed
@@ -735,14 +735,17 @@ class RosiNodeClass():
 		# 4.11. Move back
 		if self.contStart >= 1050 + offset_lap and self.contStart < 1280 + offset_lap: 
 			#print("####9####")
+			if self.state8 == True:
+				self.steering_angle = [[-4.0, -4.0, -4.15, -4.15]]
+				self.arm_front_rotSpeed = 1.0 * self.max_arms_rotational_speed
+			else:
+				self.steering_angle = [[-8.0, -8.0, -8.15, -8.15]]
 
-			self.steering_angle = [[-8.0, -8.0, -8.15, -8.15]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
 		# 4.12. Start predictions moving back to find rolls
-		if self.contStart >= 1280 + offset_lap and self.contStart < 1400 + offset_lap:
+		if self.contStart >= 1280 + offset_lap and self.contStart < 1420 + offset_lap:
 			#print("####10####")
-
 			if self.state5 == True:
 				self.steering_angle = [[-2.0, -2.0, -2.0, -2.0]]
 				self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -751,7 +754,7 @@ class RosiNodeClass():
 	
 				self.rolls_detection()
 
-				if self.cxRoll >= 180 and self.cxRoll <= 195 and self.state4 == True:
+				if self.cxRoll >= 177 and self.cxRoll <= 192 and self.state4 == True:
 					self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 					self.state5 = False
 					self.state6 = True
@@ -763,7 +766,7 @@ class RosiNodeClass():
 						self.ang = -90 	
 	
 		# 4.13. Stop robot and finish the tasks
-		if self.contStart >= 1400 + offset_lap: 
+		if self.contStart >= 1420 + offset_lap: 
 			#print("####11####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
