@@ -11,8 +11,8 @@ CHALLENGE ROSI 2019 Competition Team</h4>
   <a href="#key-features">Key Features</a> •
   <a href="https://github.com/overleaf/overleaf/wiki">Wiki</a> •
   <a href="#Instructions">Instructions</a> •
-  <a href="#Approach">Team</a> •
-  <a href="#Strategy">Team</a> •
+  <a href="#Approach">Approach</a> •
+  <a href="#Strategy">Strategy</a> •
   <a href="#Team">Team</a> •
   <a href="#license">License</a>
 </p>
