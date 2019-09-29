@@ -15,8 +15,6 @@ CHALLENGE ROSI 2019 Competition Team</h4>
   <a href="#license">License</a>
 </p>
 
-<a href="https://www.overleaf.com"><img src="https://user-images.githubusercontent.com/31168586/65396913-e096a700-dd81-11e9-9b02-68e3119673cd.png" alt="Overleaf" ></a>
-
 ## Key Features
 
 The team's main goal is to develop computational algorithms applied to autonomous robots using techniques of artificial intelligence and computer vision. This code was desenvolver for the ROSI CHALLENGE 2019.
