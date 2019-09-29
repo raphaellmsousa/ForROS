@@ -57,10 +57,10 @@ Obs.: as we are using python 2.7, you must use pip2 to install the follow depend
 
 ##### 6. Config the "simulation_parameters.yaml" as bellow:
 
+```sh
  # rosi simulation parameters
  rosi_simulation: 
-
-```sh
+ 
   # Simulation Rendering Flag
   # disable it for faster simulation (but no visualization)
   # possible values: true, false.
