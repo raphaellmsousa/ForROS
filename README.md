@@ -120,6 +120,12 @@ Obs.: as we are using python 2.7, you must use pip2 to install the follow depend
 
 A detailed description of our team's approach has been provided in the jupyter notebook file "valeNeuralNetwork.ipynb"
 
+## Strategy
+
+Our team divided the mission into two laps. The first one, we turn around the treadmills avoiding obstacles and passing through the restricted region. Also, we are detecting fire while the robot is running, our GPS movement and the position of detected fire is presented in a realtime map, check the "valeNeuralNetwork.ipynb" for more details. 
+
+In the second lap, our robot is going to try climbing up the ladders and touch the rolls. We are going to touch first the suspended platform rolls on fire and after down the stairs, the robot will detect and touch the base of a roll without fire. After that, our mission is concluded.
+
 ## Team
 
 Institutions: Federal Institute of Paraiba - IFPB - (Cajazeiras) and Federal Institute of Bahia - IFBA (Vitoria da Conquista).
