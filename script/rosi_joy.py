@@ -655,7 +655,7 @@ class RosiNodeClass():
 			self.steering_angle = model1.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
 
 		# 4.3. Start prediction model 1
-		if self.contStart >= 850 and self.contStart < 880: 
+		if self.contStart >= 820 and self.contStart < 880: 
 			#print("####2.1####")
 			self.steering_angle = model1.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
 			# Just a small trajectory correction to help the CNN avoid obstacle
