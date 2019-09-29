@@ -55,18 +55,59 @@ Obs.: as we are using python 2.7, you must use pip2 to install the follow depend
 - `$ pip2 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.14.0-cp27-none-linux_x86_64.whl` # Tensorflow version 1.14.0
 - `$ pip2 install keras==2.2.5` # Keras version 2.2.5
 
-##### 6. Open a bash terminal and type the follow commands:
+##### 6. Config the "simulation_parameters.yaml" as bellow:
+
+ # rosi simulation parameters
+ rosi_simulation: 
+
+```sh
+  # Simulation Rendering Flag
+  # disable it for faster simulation (but no visualization)
+  # possible values: true, false.
+  simulation_rendering: true
+
+  # Velodyne processing flag
+  # disable it for faster simulation (but no Velodyne data)
+  # possible values: true, false.
+  velodyne_processing: false
+
+  # Kinect processing flag
+  # disable it for faster simulation (but no kinect data)
+  # possible values: true, false.
+  kinect_processing: true
+
+  # Hokuyo processing flag
+  # disable it for faster simulation (but no hokuyo data)
+  # possible values: true, false.
+  hokuyo_processing: false
+
+  # Hokuyo drawing lines 
+  # enable it for seeing hokuyo lines
+  # possible values: true, false.
+  hokuyo_lines: false
+
+  # Camera on UR5 tool processing flag
+  # enable it for processing/publishing the ur5 tool cam
+  # possible values: true, false
+  ur5toolCam_processing: true
+
+  # Fire enabling
+  # allows to enable/disable the fire
+  fire_rendering: true
+```
+
+##### 7. Open a bash terminal and type the follow commands:
 - `$ roscore` # start a ROS master
 
-###### 6.1 In a new bash tab:
+###### 7.1 In a new bash tab:
 - `$ vrep` # to open the vrep simulator
 
-###### 6.2 In a new bash tab:
+###### 7.2 In a new bash tab:
 - `$ cd catkin_ws` # open your catkin workspace
 - `$ source deve/setup.bash` # source the path
 - `$ roslaunch rosi_defy rosi_joy.launch --screen` # start the Rosi node
 
-##### 7. Load the vrep scene and start simulation
+##### 8. Load the vrep scene and start simulation
 
 ## Approach
 
