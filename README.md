@@ -57,10 +57,10 @@ So, use this path to replace thease lines in the rosi_joy.py file
 ##### 5. Install the dependences:
 Obs.: as we are using python 2.7, you must use pip2 to install the follow dependences.
 ```sh
-- `$ sudo apt install python-pip` # pip2 install
-- `$ pip2 install "numpy<1.17" ` # Numpy version<1.17
-- `$ pip2 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.14.0-cp27-none-linux_x86_64.whl` # Tensorflow version 1.14.0
-- `$ pip2 install keras==2.2.5` # Keras version 2.2.5
+- $ sudo apt install python-pip # pip2 install
+- $ pip2 install "numpy<1.17" # Numpy version<1.17
+- $ pip2 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.14.0-cp27-none-linux_x86_64.whl # Tensorflow version 1.14.0
+- $ pip2 install keras==2.2.5 # Keras version 2.2.5
 ```
 ##### 6. Config the "simulation_parameters.yaml" as bellow:
 
