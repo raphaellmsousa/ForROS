@@ -41,7 +41,7 @@ https://github.com/filRocha/rosiChallenge-sbai2019
 ##### 4. Replace your own paths in the Rosi node (rosi_joy.py file) 
 Obs.: open your script folder by using the bash and type the follow command to get the right path:
 ```sh
-pwd
+$ pwd
 ```
 
 So, use this path to replace thease lines in the rosi_joy.py file
