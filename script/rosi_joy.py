@@ -669,7 +669,7 @@ class RosiNodeClass():
 			self.arm_rear_rotSpeed = 0 * self.max_arms_rotational_speed
 
 		# 4.5. Just a small trajectory correction 
-		if self.contStart >= 280 + offset_lap and self.contStart < 380 + offset_lap:
+		if self.contStart >= 280 + offset_lap and self.contStart < 350 + offset_lap:
 			#print("####3.1####")
 			self.steering_angle = model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
 			self.steering_angle = self.steering_angle * [[1.03, 1.03, 1.0, 1.0]]	
