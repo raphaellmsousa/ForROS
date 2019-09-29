@@ -37,6 +37,13 @@ https://github.com/filRocha/rosiChallenge-sbai2019
 - *map* # To save the GPS tracking
 
 ##### 4. Replace your own paths in the Rosi node (rosi_joy.py file) 
+Obs.: open your script folder by using the bash and type the follow command to get the right path:
+```sh
+pwd
+```
+
+So, use this path to replace thease lines in the rosi_joy.py file
+```sh
 - model1 = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/model.h5') 
 - model2 = load_model('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/modelLadder.h5') 
 - path_to_imageName1 = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/'+imageName1+'/' 
@@ -44,15 +51,15 @@ https://github.com/filRocha/rosiChallenge-sbai2019
 - path_to_folder = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/robotCommands/' 
 - path_to_folder = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/map/' 
 - plt.savefig('/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/map/map.png') 
-
+```
 ##### 5. Install the dependences:
 Obs.: as we are using python 2.7, you must use pip2 to install the follow dependences.
-
+```sh
 - `$ sudo apt install python-pip` # pip2 install
 - `$ pip2 install "numpy<1.17" ` # Numpy version<1.17
 - `$ pip2 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.14.0-cp27-none-linux_x86_64.whl` # Tensorflow version 1.14.0
 - `$ pip2 install keras==2.2.5` # Keras version 2.2.5
-
+```
 ##### 6. Config the "simulation_parameters.yaml" as bellow:
 
 ```sh
