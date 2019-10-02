@@ -23,21 +23,11 @@ The team's main goal is to develop computational algorithms applied to autonomou
 
 ## Instructions
 
-##### 1. First of all, follow all instructions to install vrep simulator for the ROSI Challenge 2019, as you can find in:
-
-https://github.com/filRocha/rosiChallenge-sbai2019
-
-##### 2. Now, download our repositorty inside of your catking workspace. You will find some files inside of the script folder:
+##### 1. Clone and download this repository package to your ROS Workspace src folder (../catkin_ws/src) folder with the name rosi_defy:
 ```sh
-- rosi_joy.py # Rosi node
-- model.h # Trainned CNN model to avoid obstacles
-- modelLadder.h # Trainned CNN model to go up the stairs
-- model.py # To train a new CNN model
-- rgb_data # Folder to save data for training a new CNN model
-- robotCommands # Folder to sabe the xls file with the motors traction commands
-- map # Folder to save the GPS tracking
+$ git clone https://github.com/raphaellmsousa/ForROS rosi_defy_FoROS
 ```
-##### 3. Install the dependences:
+##### 2. Install the dependences:
 Obs.: as we are using python 2.7, you must use pip2 to install the follow dependences.
 ```sh
 - $ sudo apt install python-pip # pip2 install
@@ -45,7 +35,7 @@ Obs.: as we are using python 2.7, you must use pip2 to install the follow depend
 - $ pip2 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.14.0-cp27-none-linux_x86_64.whl # Tensorflow version 1.14.0
 - $ pip2 install keras==2.2.5 # Keras version 2.2.5
 ```
-##### 4. Config the "simulation_parameters.yaml" as bellow:
+##### 3. Config the "simulation_parameters.yaml" as bellow:
 
 ```sh
  # rosi simulation parameters
@@ -86,18 +76,18 @@ Obs.: as we are using python 2.7, you must use pip2 to install the follow depend
   fire_rendering: true
 ```
 
-##### 5. Open a bash terminal and type the follow commands:
+##### 4. Open a bash terminal and type the follow commands:
 - `$ roscore` # start a ROS master
 
-###### 5.1 In a new bash tab:
+###### 4.1 In a new bash tab:
 - `$ vrep` # to open the vrep simulator
 
-###### 5.2 In a new bash tab:
+###### 4.2 In a new bash tab:
 - `$ cd catkin_ws` # open your catkin workspace
 - `$ source deve/setup.bash` # source the path
 - `$ roslaunch rosi_defy_FoROS rosi_joy_FoROS.launch` # start the Rosi node
 
-##### 6. Load the vrep scene and start simulation
+##### 5. Load the vrep scene and start simulation
 
 ## Approach
 
