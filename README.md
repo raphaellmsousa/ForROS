@@ -24,7 +24,7 @@ The team's main goal is to develop computational algorithms applied to autonomou
 ## Instructions
 
 ##### 1. Create the follow catking workspace:
-Obs.: Pay attention!!!! The workspace name must be as follow, because we need this path to find the CNN model in the rosi_forros node.
+Obs.: Pay attention!!!! The workspace name must be as follow, because we need this name and path to find the CNN model in the rosi_forros node.
 ```sh
 mkdir -p ~/catkin_ws_forros/src
 cd ~/catkin_ws_forros/src
