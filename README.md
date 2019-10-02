@@ -23,7 +23,7 @@ The team's main goal is to develop computational algorithms applied to autonomou
 
 ## Instructions
 
-##### 1. Clone and download this repository package to your ROS Workspace src folder (../catkin_ws/src) folder with the name rosi_defy:
+##### 1. Clone and download this repository package to your ROS Workspace src folder (../catkin_ws_forros/src) folder with the name rosi_defy:
 ```sh
 
 $ git clone https://github.com/raphaellmsousa/ForROS rosi_defy_forros
