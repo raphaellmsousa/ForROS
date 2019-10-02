@@ -330,7 +330,6 @@ class RosiNodeClass():
 		rgb = np.empty((height,width,3),np.uint8) 
 
 		# 3. Save the image in a specified path
-		pathToPack = rospack.get_path('rosi_defy_forros')
 		path = pathToPack + '/script'+str('/')+folder # Replace with your path folder
 		file_name = folder+'_'+str(countImage+self.offset)+'.jpg'
 		file_to_save = os.path.join(path,file_name)    
@@ -346,7 +345,6 @@ class RosiNodeClass():
 			- image ()
 		'''
 		# 1. Write paths to images
-		pathToPack = rospack.get_path('rosi_defy_forros')
 		path_to_imageName1 = pathToPack + '/script/'+imageName1+'/'   # Replace with your path folder
 		path_to_imageName2 = pathToPack + '/script/'+imageName2+'/'   # Replace with your path folder
 		path_to_folder = pathToPack + '/script/robotCommands/'        # Replace with your path folder
@@ -366,7 +364,6 @@ class RosiNodeClass():
 			- latitude and longitude data from GPS (vrep simulator)
 		'''
 		# 1. Path to save data
-		pathToPack = rospack.get_path('rosi_defy_forros')
 		path_to_folder = pathToPack + '/script/map/' # Replace with your path folder
 
 		# 2. Save data
@@ -809,7 +806,6 @@ class RosiNodeClass():
 			plt.pause(0.001)
 			self.gpsInc = 0
 			# 3.1. Uncomment to save the map
-			pathToPack = rospack.get_path('rosi_defy_forros')
 			#plt.savefig(pathToPack + '/script/map/map.png') # Replace with your path folder
 		return None
 
