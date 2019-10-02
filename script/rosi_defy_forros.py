@@ -53,10 +53,10 @@ import matplotlib.pyplot as plt
 from os.path import expanduser
 home = expanduser("~")
 
-model1 = load_model(home + '/catkin_ws/src/script/model.h5') # Replace with your path folder
+model1 = load_model(home + '/catkin_ws/src/rosi_defy_forros/script/model.h5') # Replace with your path folder
 model1._make_predict_function()
 
-model2 = load_model(home + '/catkin_ws/src/script/modelLadder.h5') # Replace with your path folder
+model2 = load_model(home + '/catkin_ws/src/rosi_defy_forros/script/modelLadder.h5') # Replace with your path folder
 model2._make_predict_function()
 
 ###############################################################################################################################
@@ -354,7 +354,7 @@ class RosiNodeClass():
 
 		# 3. Save the image in a specified path
 		home = expanduser("~")
-		path = home + '/catkin_ws/src/script'+str('/')+folder # Replace with your path folder
+		path = home + '/catkin_ws/src/rosi_defy_forros/script'+str('/')+folder # Replace with your path folder
 		file_name = folder+'_'+str(countImage+self.offset)+'.jpg'
 		file_to_save = os.path.join(path,file_name)    
 		cv2.imwrite(os.path.join(path,file_to_save), rgb)
@@ -370,9 +370,9 @@ class RosiNodeClass():
 		'''
 		# 1. Write paths to images
 		home = expanduser("~")
-		path_to_imageName1 = home + '/catkin_ws/src/script/'+imageName1+'/'   # Replace with your path folder
-		path_to_imageName2 = home + '/catkin_ws/src/script/'+imageName2+'/'   # Replace with your path folder
-		path_to_folder = home + '/catkin_ws/src/script/robotCommands/'        # Replace with your path folder
+		path_to_imageName1 = home + '/catkin_ws/src/rosi_defy_forros/script/'+imageName1+'/'   # Replace with your path folder
+		path_to_imageName2 = home + '/catkin_ws/src/rosi_defy_forros/script/'+imageName2+'/'   # Replace with your path folder
+		path_to_folder = home + '/catkin_ws/src/rosi_defy_forros/script/robotCommands/'        # Replace with your path folder
 
 		# 2. Create a csv file and save robot traction commands
 		with open(path_to_folder+"driving_log.csv", 'a') as csvfile:
@@ -390,7 +390,7 @@ class RosiNodeClass():
 		'''
 		# 1. Path to save data
 		home = expanduser("~")
-		path_to_folder = home + '/catkin_ws/src/script/map/' # Replace with your path folder
+		path_to_folder = home + '/catkin_ws/src/rosi_defy_forros/script/map/' # Replace with your path folder
 
 		# 2. Save data
 		with open(path_to_folder+"map_log.csv", 'a') as csvfile:
@@ -833,7 +833,7 @@ class RosiNodeClass():
 			self.gpsInc = 0
 			# 3.1. Uncomment to save the map
 			home = expanduser("~")
-			#plt.savefig(home + '/catkin_ws/src/script/map/map.png') # Replace with your path folder
+			#plt.savefig(home + '/catkin_ws/src/rosi_defy_forros/script/map/map.png') # Replace with your path folder
 		return None
 
 	# ---- Support Methods --------
