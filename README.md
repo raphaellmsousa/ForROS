@@ -23,7 +23,7 @@ The team's main goal is to develop computational algorithms applied to autonomou
 
 ## Instructions
 
-##### 1. Create the follow catking workspace:
+##### 1. Create a catking workspace:
 ```sh
 mkdir -p ~/catkin_ws/src
 cd ~/catkin_ws/src
