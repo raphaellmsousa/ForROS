@@ -28,7 +28,6 @@ The team's main goal is to develop computational algorithms applied to autonomou
 mkdir -p ~/catkin_ws_forros/src
 cd ~/catkin_ws_forros/src
 catkin_init_workspace
-cd ~/catkin_ws_forros
 ```
 ##### 2. Clone and download this repository package to your ROS Workspace src folder (../catkin_ws_forros/src) folder with the name rosi_defy:
 ```sh
