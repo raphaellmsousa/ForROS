@@ -45,18 +45,20 @@ from keras.models import load_model
 
 import matplotlib.pyplot as plt
 
+import rospkg
+
 ###############################################################################################################################
 #	Uncomment to use the model
 ###############################################################################################################################
 
-# get home path
-from os.path import expanduser
-home = expanduser("~")
+rospack = rospkg.RosPack()
+#get the file path for rospy_tutorials
+pathToPack = rospack.get_path('rosi_defy_forros')
 
-model1 = load_model(home + '/catkin_ws/src/rosi_defy_forros/script/model.h5') # Replace with your path folder
+model1 = load_model(pathToPack + '/script/model.h5') # Replace with your path folder
 model1._make_predict_function()
 
-model2 = load_model(home + '/catkin_ws/src/rosi_defy_forros/script/modelLadder.h5') # Replace with your path folder
+model2 = load_model(pathToPack + '/script/modelLadder.h5') # Replace with your path folder
 model2._make_predict_function()
 
 class RosiNodeClass():
@@ -328,8 +330,8 @@ class RosiNodeClass():
 		rgb = np.empty((height,width,3),np.uint8) 
 
 		# 3. Save the image in a specified path
-		home = expanduser("~")
-		path = home + '/catkin_ws/src/rosi_defy_forros/script'+str('/')+folder # Replace with your path folder
+		pathToPack = rospack.get_path('rosi_defy_forros')
+		path = pathToPack + '/script'+str('/')+folder # Replace with your path folder
 		file_name = folder+'_'+str(countImage+self.offset)+'.jpg'
 		file_to_save = os.path.join(path,file_name)    
 		cv2.imwrite(os.path.join(path,file_to_save), rgb)
@@ -344,10 +346,10 @@ class RosiNodeClass():
 			- image ()
 		'''
 		# 1. Write paths to images
-		home = expanduser("~")
-		path_to_imageName1 = home + '/catkin_ws/src/rosi_defy_forros/script/'+imageName1+'/'   # Replace with your path folder
-		path_to_imageName2 = home + '/catkin_ws/src/rosi_defy_forros/script/'+imageName2+'/'   # Replace with your path folder
-		path_to_folder = home + '/catkin_ws/src/rosi_defy_forros/script/robotCommands/'        # Replace with your path folder
+		pathToPack = rospack.get_path('rosi_defy_forros')
+		path_to_imageName1 = pathToPack + '/script/'+imageName1+'/'   # Replace with your path folder
+		path_to_imageName2 = pathToPack + '/script/'+imageName2+'/'   # Replace with your path folder
+		path_to_folder = pathToPack + '/script/robotCommands/'        # Replace with your path folder
 
 		# 2. Create a csv file and save robot traction commands
 		with open(path_to_folder+"driving_log.csv", 'a') as csvfile:
@@ -364,8 +366,8 @@ class RosiNodeClass():
 			- latitude and longitude data from GPS (vrep simulator)
 		'''
 		# 1. Path to save data
-		home = expanduser("~")
-		path_to_folder = home + '/catkin_ws/src/rosi_defy_forros/script/map/' # Replace with your path folder
+		pathToPack = rospack.get_path('rosi_defy_forros')
+		path_to_folder = pathToPack + '/script/map/' # Replace with your path folder
 
 		# 2. Save data
 		with open(path_to_folder+"map_log.csv", 'a') as csvfile:
@@ -807,8 +809,8 @@ class RosiNodeClass():
 			plt.pause(0.001)
 			self.gpsInc = 0
 			# 3.1. Uncomment to save the map
-			home = expanduser("~")
-			#plt.savefig(home + '/catkin_ws/src/rosi_defy_forros/script/map/map.png') # Replace with your path folder
+			pathToPack = rospack.get_path('rosi_defy_forros')
+			#plt.savefig(pathToPack + '/script/map/map.png') # Replace with your path folder
 		return None
 
 	# ---- Support Methods --------
