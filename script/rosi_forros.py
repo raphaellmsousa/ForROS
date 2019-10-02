@@ -365,7 +365,7 @@ class RosiNodeClass():
 		'''
 		# 1. Path to save data
 		home = expanduser("~")
-		path_to_folder = home + '/catkin_ws_forros/src/rosi_defy_forros/script/map/' # Replace with your path folder
+		path_to_folder = home + '/catkin_ws/src/rosi_defy_forros/script/map/' # Replace with your path folder
 
 		# 2. Save data
 		with open(path_to_folder+"map_log.csv", 'a') as csvfile:
