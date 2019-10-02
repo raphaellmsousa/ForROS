@@ -36,7 +36,7 @@ catkin_init_workspace
 $ git clone https://github.com/raphaellmsousa/ForROS rosi_defy_forros
 
 ```
-##### 3. Change the node permission in the .../catkin_ws_forros/src/rosi_defy_forros/script folder:
+##### 3. Change the node permission in the .../catkin_ws/src/rosi_defy_forros/script folder:
 ```sh
 chmod +x rosi_forros.py
 ```
