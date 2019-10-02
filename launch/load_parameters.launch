@@ -1,5 +1,6 @@
 <launch>
 
-	<rosparam command="load" file="$(find rosi_defy_forros)/config/simulation_parameters.yaml" />
+	<rosparam command="load" file="$(find rosi_defy_foros)/config/simulation_parameters.yaml" />
+
 
 </launch>
