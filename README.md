@@ -38,6 +38,7 @@ $ git clone https://github.com/raphaellmsousa/ForROS rosi_defy_forros
 ```
 ##### 3. Change the node permission in the .../catkin_ws/src/rosi_defy_forros/script folder:
 ```sh
+cd ~/catkin_ws/src/rosi_defy_forros/script
 chmod +x rosi_forros.py
 ```
 ##### 4. Compile the node:
