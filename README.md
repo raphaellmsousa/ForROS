@@ -95,7 +95,7 @@ Obs.: as we are using python 2.7, you must use pip2 to install the follow depend
 ###### 5.2 In a new bash tab:
 - `$ cd catkin_ws` # open your catkin workspace
 - `$ source deve/setup.bash` # source the path
-- `$ roslaunch rosi_defy rosi_joy.launch --screen` # start the Rosi node
+- `$ roslaunch rosi_defy_FoROS rosi_joy_FoROS.launch` # start the Rosi node
 
 ##### 6. Load the vrep scene and start simulation
 
