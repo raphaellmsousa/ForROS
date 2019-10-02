@@ -108,7 +108,7 @@ Obs.: as we are using python 2.7, you must use pip2 to install the follow depend
 
 ###### 7.4 Now, let's running out node:
 - `$ cd catkin_ws_forros` # open your catkin workspace
-- `$ source deve/setup.bash` # source the path
+- `$ source devel/setup.bash` # source the path
 - `$ roslaunch rosi_defy_forros rosi_joy_forros.launch` # start the Rosi node
 
 ## Approach
