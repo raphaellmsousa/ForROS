@@ -59,31 +59,6 @@ model1._make_predict_function()
 model2 = load_model(home + '/catkin_ws_forros/src/rosi_defy_forros/script/modelLadder.h5') # Replace with your path folder
 model2._make_predict_function()
 
-###############################################################################################################################
-#	Instructions
-###############################################################################################################################
-'''
-1. Install the dependences:
-
-pip2 install "numpy<1.17" # Numpy version<1.17
-pip2 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.14.0-cp27-none-linux_x86_64.whl # Tensorflow version 1.14.0
-pip2 install keras==2.2.5 # Keras version 2.2.5
-
-2. Open a bash terminal and tipe the follow commands:
-roscore # start a ROS master
-
-2.1 In a new bash tab:
-vrep # to open the vrep simulator
-
-2.2 In a new bash tab:
-cd catkin_ws # open your catkin workspace
-source deve/setup.bash # source the path
-roslaunch rosi_defy rosi_joy.launch --screen # start the Rosi node
-
-3. Load the vrep scene and start the simulation
-
-'''
-
 class RosiNodeClass():
 
 	# class attributes
