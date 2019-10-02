@@ -1,0 +1,8 @@
+<launch>
+
+	<!-- running the rosi node -->
+	<node name="rosi_defy_FoROS" pkg="rosi_defy_FoROS" type="rosi_defy_FoROS.py" respawn="true"/>
+
+	<rosparam command="load" file="$(find rosi_defy_FoROS)/config/simulation_parameters.yaml" />
+
+</launch>
