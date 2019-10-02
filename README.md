@@ -26,7 +26,7 @@ The team's main goal is to develop computational algorithms applied to autonomou
 ##### 1. Clone and download this repository package to your ROS Workspace src folder (../catkin_ws/src) folder with the name rosi_defy:
 ```sh
 
-$ git clone https://github.com/raphaellmsousa/ForROS rosi_defy_FoROS
+$ git clone https://github.com/raphaellmsousa/ForROS rosi_defy_forros
 
 ```
 ##### 2. Install the dependences:
@@ -87,7 +87,7 @@ Obs.: as we are using python 2.7, you must use pip2 to install the follow depend
 ###### 4.2 In a new bash tab:
 - `$ cd catkin_ws` # open your catkin workspace
 - `$ source deve/setup.bash` # source the path
-- `$ roslaunch rosi_defy_FoROS rosi_joy_FoROS.launch` # start the Rosi node
+- `$ roslaunch rosi_defy_forros rosi_joy_forros.launch` # start the Rosi node
 
 ##### 5. Load the vrep scene and start simulation
 
