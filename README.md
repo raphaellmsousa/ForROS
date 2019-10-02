@@ -23,13 +23,29 @@ The team's main goal is to develop computational algorithms applied to autonomou
 
 ## Instructions
 
-##### 1. Clone and download this repository package to your ROS Workspace src folder (../catkin_ws_forros/src) folder with the name rosi_defy:
+##### 1. Create the follow catking workspace:
+```sh
+mkdir -p ~/catkin_ws_forros/src
+cd ~/catkin_ws_forros/src
+catkin_init_workspace
+cd ~/catkin_ws_forros
+```
+##### 2. Clone and download this repository package to your ROS Workspace src folder (../catkin_ws_forros/src) folder with the name rosi_defy:
 ```sh
 
 $ git clone https://github.com/raphaellmsousa/ForROS rosi_defy_forros
 
 ```
-##### 2. Install the dependences:
+##### 3. Change the node permission in the script folder:
+```sh
+chmod +x rosi_forros.py
+```
+##### 4. Compile the node:
+```sh
+cd ~/catkin_ws_forros
+catkin_make
+```
+##### 5. Install the dependences:
 Obs.: as we are using python 2.7, you must use pip2 to install the follow dependences.
 ```sh
 - $ sudo apt install python-pip # pip2 install
@@ -37,7 +53,7 @@ Obs.: as we are using python 2.7, you must use pip2 to install the follow depend
 - $ pip2 install https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-1.14.0-cp27-none-linux_x86_64.whl # Tensorflow version 1.14.0
 - $ pip2 install keras==2.2.5 # Keras version 2.2.5
 ```
-##### 3. Config the "simulation_parameters.yaml" as bellow:
+##### 6. Config the "simulation_parameters.yaml" as bellow:
 
 ```sh
  # rosi simulation parameters
@@ -78,18 +94,23 @@ Obs.: as we are using python 2.7, you must use pip2 to install the follow depend
   fire_rendering: true
 ```
 
-##### 4. Open a bash terminal and type the follow commands:
+##### 7. Open a bash terminal and type the follow commands:
 - `$ roscore` # start a ROS master
 
-###### 4.1 In a new bash tab:
+###### 7.1 In a new bash tab:
 - `$ vrep` # to open the vrep simulator
 
-###### 4.2 In a new bash tab:
+###### 7.2 In a new bash tab:
 - `$ cd catkin_ws` # open your catkin workspace
 - `$ source deve/setup.bash` # source the path
-- `$ roslaunch rosi_defy_forros rosi_joy_forros.launch` # start the Rosi node
+- `$ roslaunch rosi_defy rosi_joy.launch ` # start the Rosi node
 
-##### 5. Load the vrep scene and start simulation
+###### 7.3 Load the vrep scene and start simulation
+
+###### 7.4 Now, let's running out node:
+- `$ cd catkin_ws_forros` # open your catkin workspace
+- `$ source deve/setup.bash` # source the path
+- `$ roslaunch rosi_defy_forros rosi_joy_forros.launch` # start the Rosi node
 
 ## Approach
 
