@@ -26,8 +26,8 @@ The team's main goal is to develop computational algorithms applied to autonomou
 ##### 1. Create the follow catking workspace:
 Obs.: Pay attention!!!! The workspace name must be as follow, because we need this name and path to find the CNN model in the rosi_forros node.
 ```sh
-mkdir -p ~/catkin_ws_forros/src
-cd ~/catkin_ws_forros/src
+mkdir -p ~/catkin_ws/src
+cd ~/catkin_ws/src
 catkin_init_workspace
 ```
 ##### 2. Clone and download this repository package to your ROS Workspace src folder (../catkin_ws_forros/src) folder with the name rosi_defy:
@@ -42,8 +42,8 @@ chmod +x rosi_forros.py
 ```
 ##### 4. Compile the node:
 ```sh
-cd ~/catkin_ws_forros
-catkin_make
+cd ~/catkin_ws
+catkin build
 ```
 ##### 5. Install the dependences:
 Obs.: as we are using python 2.7, you must use pip2 to install the follow dependences.
@@ -100,15 +100,10 @@ Obs.: as we are using python 2.7, you must use pip2 to install the follow depend
 ###### 7.1 In a new bash tab:
 - `$ vrep` # to open the vrep simulator
 
-###### 7.2 In a new bash tab:
-- `$ cd ~/catkin_ws` # open your catkin workspace
-- `$ source deve/setup.bash` # source the path
-- `$ roslaunch rosi_defy rosi_joy.launch ` # start the Rosi node
-
 ###### 7.3 Load the vrep scene and start simulation
 
 ###### 7.4 Now, let's running out node:
-- `$ cd ~/catkin_ws_forros` # open your catkin workspace
+- `$ cd ~/catkin_ws` # open your catkin workspace
 - `$ source devel/setup.bash` # source the path
 - `$ roslaunch rosi_defy_forros rosi_joy_forros.launch` # start the Rosi node
 
