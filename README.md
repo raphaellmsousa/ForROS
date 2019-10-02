@@ -29,7 +29,7 @@ mkdir -p ~/catkin_ws/src
 cd ~/catkin_ws/src
 catkin_init_workspace
 ```
-##### 2. Clone and download this repository package to your ROS Workspace src folder (../catkin_ws_forros/src) folder with the name rosi_defy:
+##### 2. Clone and download this repository package to your ROS Workspace src folder (../catkin_ws/src) folder with the name rosi_defy_forros:
 ```sh
 
 $ git clone https://github.com/raphaellmsousa/ForROS rosi_defy_forros
