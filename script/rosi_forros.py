@@ -126,6 +126,8 @@ class RosiNodeClass():
 		self.ang2 = 0
 		self.cx = 0
 		self.cxRoll = 0
+		self.ladderStateCount = False
+		self.changeModelCount = False
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -149,13 +151,13 @@ class RosiNodeClass():
 		self.sub_traction_speed = rospy.Subscriber('/rosi/command_traction_speed', RosiMovementArray, self.callback_traction_speed)
 
 		# ur5toolCam subscriber
-		self.sub_traction_speed = rospy.Subscriber('/sensor/ur5toolCam', Image, self.callback_ur5toolCam)
+		self.sub_ur5toolCam = rospy.Subscriber('/sensor/ur5toolCam', Image, self.callback_ur5toolCam)
 
 		# ur5 force torque
-		self.sub_traction_speed = rospy.Subscriber('/ur5/forceTorqueSensorOutput', TwistStamped, self.callback_TorqueSensor)
+		self.sub_force = rospy.Subscriber('/ur5/forceTorqueSensorOutput', TwistStamped, self.callback_TorqueSensor)
 
 		# gps
-		self.sub_traction_speed = rospy.Subscriber('/sensor/gps', NavSatFix, self.callback_gps)
+		self.sub_gps = rospy.Subscriber('/sensor/gps', NavSatFix, self.callback_gps)
 
 		# defining the eternal loop frequency
 		node_sleep_rate = rospy.Rate(10)
@@ -228,8 +230,31 @@ class RosiNodeClass():
 		# enter in rospy spin
 		#rospy.spin()
 
-
 	# Starting usefull functions
+
+	def build_ellipse(self, x, y):
+		'''
+		This routine is used to detect build an ellipse with GPS data around the robot. 
+		This is used to check the robot position. If a point is within the ellipse, means that 
+		the robot is close tho the test point
+		'''
+		h = self.latitude #x
+		k = self.longitude #y
+		a = 1.2
+		b = 0.5	
+		
+		return ((x - h)**2)/(b**2) + ((y - k)**2)/(a**2) #ellipse equation
+
+	def check_state_transition(self, ellipseEquation):
+		'''
+		Check transition of states to determine which task should be done
+		'''
+		if ellipseEquation <= 1:
+			out = True
+		else:
+			out = False
+
+		return out
 
 	def fire_detection(self, img):
 		'''
@@ -598,12 +623,38 @@ class RosiNodeClass():
 			self.contStart = self.contStart + 1
 			if self.state6 == False:
 				print("Almost there...", self.contStart)
+				print(self.latitude, self.longitude)
 
 		# 4. Call function to predict the traction commands
 		# These counter values were adjusted to get the correct timing to execute the tasks
 		# Use offset_lap = 630 to go up the ramp in the first lap
 		#offset_lap = 630
 		offset_lap = 2350 
+
+		# Ladder
+		x = -45.297 #test point
+		y = 3.888 #test point
+
+		ellipseEquation = self.build_ellipse(x, y)
+
+		if self.check_state_transition(ellipseEquation) == True:
+			self.ladderStateCount = True
+
+		x2 = -27.47 #test point
+		y2 = 2.55 #test point
+
+		ellipseEquation2 = self.build_ellipse(x2, y2)
+
+		if self.check_state_transition(ellipseEquation2) == True and self.ladderStateCount == True:
+			self.changeModelCount = True
+
+		print(self.ladderStateCount)
+		print(self.changeModelCount)
+
+		# Change model
+		#x = -27.47 #test point
+		#y = 2.55 #test point
+
 		# 4.1. Robot start position 
 		if self.contStart >= 0 and self.contStart < 300:
 			#print("####1####")
@@ -623,17 +674,20 @@ class RosiNodeClass():
 			self.steering_angle = self.steering_angle * [[1.0, 1.0, 1.05, 1.05]] 
 
 		# 4.4. Start prediction model 2
-		if self.contStart >= offset_lap and self.contStart < 430 + offset_lap:
+		#if self.contStart >= offset_lap and self.contStart < 430 + offset_lap:
+		if self.ladderStateCount == True and self.changeModelCount == True:
 			#print("####3####")
+			#print(self.latitude, self.longitude)
 			self.steering_angle = model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
 			self.arm_front_rotSpeed = 0 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = 0 * self.max_arms_rotational_speed
 
 		# 4.5. Just a small trajectory correction 
-		if self.contStart >= 280 + offset_lap and self.contStart < 350 + offset_lap:
+		#if self.contStart >= 280 + offset_lap and self.contStart < 350 + offset_lap:
+		#if self.ladderStateCount == True and self.changeModelCount == True:
 			#print("####3.1####")
-			self.steering_angle = model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
-			self.steering_angle = self.steering_angle * [[1.03, 1.03, 1.0, 1.0]]	
+			#self.steering_angle = model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
+			#self.steering_angle = self.steering_angle * [[1.03, 1.03, 1.0, 1.0]]	
 
 
 		# 4.6. Front arm go down and stop motors	
@@ -825,7 +879,7 @@ class RosiNodeClass():
 if __name__ == '__main__':
 
 	# initialize the node
-	rospy.init_node('rosi_example_node', anonymous=True)
+	rospy.init_node('forros_node', anonymous=True)
 
 	# instantiate the class
 	try:
