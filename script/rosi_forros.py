@@ -126,8 +126,13 @@ class RosiNodeClass():
 		self.ang2 = 0
 		self.cx = 0
 		self.cxRoll = 0
-		self.ladderStateCount = False
-		self.changeModelCount = False
+		self.ladderState = False
+		self.changeModel = False
+		self.climbState = False
+		self.climbStop = False
+		self.ladderCount = 0
+		self.img_out_preprocessed = None
+		self.touch = False
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -241,9 +246,11 @@ class RosiNodeClass():
 		h = self.latitude #x
 		k = self.longitude #y
 		a = 1.2
-		b = 0.5	
+		b = 0.2
 		
-		return ((x - h)**2)/(b**2) + ((y - k)**2)/(a**2) #ellipse equation
+		ellipseEquation = ((x - h)**2)/(b**2) + ((y - k)**2)/(a**2)
+
+		return ellipseEquation
 
 	def check_state_transition(self, ellipseEquation):
 		'''
@@ -605,115 +612,92 @@ class RosiNodeClass():
 		#cv2.waitKey(1)
 		return None
 
-	def put_image_together(self):
+	def state_machine(self):
 		'''
-		This function is used to concatenate images from kinect and ur5toolCam.
-		Besides that, this function calls the routine to predict the velocity 
-		of the motors and get directions to follow the path.		
+
 		'''
-		# 1. Create a single image with ur5 and kinect ones
-		self.concatImage = np.concatenate((self.img_out_arm, self.rgbOut), axis=1)
-
-		# 2. Create a array and call the process function
-		image_array = np.asarray(self.concatImage)
-		img_out_preprocessed = self.preprocess(image_array)
-
-		# 3. Counting routine to wait robot being ready to go
-		if self.autoModeStart == True:
-			self.contStart = self.contStart + 1
-			if self.state6 == False:
-				print("Almost there...", self.contStart)
-				print(self.latitude, self.longitude)
-
-		# 4. Call function to predict the traction commands
-		# These counter values were adjusted to get the correct timing to execute the tasks
-		# Use offset_lap = 630 to go up the ramp in the first lap
-		#offset_lap = 630
 		offset_lap = 2350 
 
-		# Ladder
-		x = -45.297 #test point
-		y = 3.888 #test point
+		# GPS ladder coodinate 
+		x = -45.297 #latitude
+		y = 3.888 #longitude
 
 		ellipseEquation = self.build_ellipse(x, y)
 
 		if self.check_state_transition(ellipseEquation) == True:
-			self.ladderStateCount = True
+			self.ladderState = True
 
-		x2 = -27.47 #test point
-		y2 = 2.55 #test point
+		# GPS new model coodinate
+		x2 = -27.47 #latitude
+		y2 = 2.55 #longitude
 
 		ellipseEquation2 = self.build_ellipse(x2, y2)
 
-		if self.check_state_transition(ellipseEquation2) == True and self.ladderStateCount == True:
-			self.changeModelCount = True
+		if self.check_state_transition(ellipseEquation2) == True and self.ladderState == True:
+			self.changeModel = True
 
-		print(self.ladderStateCount)
-		print(self.changeModelCount)
+		# GPS Climbing stairs coodinate
+		x3 = -42.037 #latitude
+		y3 = 1.782 #longitude
 
-		# Change model
-		#x = -27.47 #test point
-		#y = 2.55 #test point
+		ellipseEquation3 = self.build_ellipse(x3, y3)
 
-		# 4.1. Robot start position 
+		if self.check_state_transition(ellipseEquation3) == True and self.changeModel == True:
+			self.climbState = True
+
+		# GPS Climbing stairs coodinate
+		x4 = -43.231 #latitude
+		y4 = 1.886 #longitude
+
+		ellipseEquation4 = self.build_ellipse(x4, y4)
+
+		if self.check_state_transition(ellipseEquation4) == True:
+			self.climbStop = True
+
+		# 1.1. Robot start position 
 		if self.contStart >= 0 and self.contStart < 300:
-			#print("####1####")
+			print("####1####")
 			self.arm_front_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_right
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_left		
 
-		# 4.2. Start prediction model 1
-		if self.contStart >= 300 and self.contStart < offset_lap: 
-			#print("####2####")
-			self.steering_angle = model1.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
+		# 1.2. Start prediction model 1
+		if self.contStart >= 300 and self.changeModel == False: 
+			print("####2####")
+			self.steering_angle = model1.predict(self.img_out_preprocessed[None, :, :, :], batch_size=1)
 
-		# 4.3. Start prediction model 1
-		if self.contStart >= 820 and self.contStart < 880: 
-			#print("####2.1####")
-			self.steering_angle = model1.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
-			# Just a small trajectory correction to help the CNN avoid obstacle
-			self.steering_angle = self.steering_angle * [[1.0, 1.0, 1.05, 1.05]] 
-
-		# 4.4. Start prediction model 2
-		#if self.contStart >= offset_lap and self.contStart < 430 + offset_lap:
-		if self.ladderStateCount == True and self.changeModelCount == True:
-			#print("####3####")
-			#print(self.latitude, self.longitude)
-			self.steering_angle = model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
+		# 1.3. Start prediction model 2
+		if self.ladderState == True and self.changeModel == True and self.climbState == False:
+			print("####3####")
+			self.steering_angle = model2.predict(self.img_out_preprocessed[None, :, :, :], batch_size=1)
 			self.arm_front_rotSpeed = 0 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = 0 * self.max_arms_rotational_speed
 
-		# 4.5. Just a small trajectory correction 
-		#if self.contStart >= 280 + offset_lap and self.contStart < 350 + offset_lap:
-		#if self.ladderStateCount == True and self.changeModelCount == True:
-			#print("####3.1####")
-			#self.steering_angle = model2.predict(img_out_preprocessed[None, :, :, :], batch_size=1)
-			#self.steering_angle = self.steering_angle * [[1.03, 1.03, 1.0, 1.0]]	
-
-
-		# 4.6. Front arm go down and stop motors	
-		if self.contStart >= 430 + offset_lap and self.contStart < 530 + offset_lap:
-			#print("####4####")
+		# 1.4. Front arm go down and stop motors	
+		if self.ladderState == True and self.changeModel == True and self.climbState == True and self.ladderCount < 100:
+			print("####4####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.arm_front_rotSpeed = 1.8 * self.max_arms_rotational_speed
+			self.ladderCount = self.ladderCount + 1
 
-		# 4.7. Climbing stairs
-		if self.contStart >= 530 + offset_lap and self.contStart < 600 + offset_lap:
-			#print("####5####")
+		# 1.5. Climbing stairs
+		if self.changeModel == True and self.climbState == True and self.climbStop == False and self.ladderCount>=100:
+			print("####5####")
 			self.steering_angle = [[15.0, 15.0, 15.0, 15.0]]
 			self.arm_front_rotSpeed = -0.4 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed
 
 		# 4.8. Stop motors
-		if self.contStart >= 600 + offset_lap and self.contStart < 650 + offset_lap: 
-			#print("####6####")
+		if self.climbStop == True and self.ladderCount >=100 and self.ladderCount < 200: 
+			print("####6####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.pub_roll_arm_position([-90.0, 0.0, 0.0, 30.0, 90.0, 0.0])
 			self.arm_front_rotSpeed = 0.5 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = 0.2 * self.max_arms_rotational_speed
+			self.ladderCount = self.ladderCount + 1
 
-		# 4.9. Move foward or get rolls
-		if self.contStart >= 650 + offset_lap and self.contStart < 1030 + offset_lap: 
-			#print("####7####")
+		# 1.6. Move foward or get rolls
+		if self.climbStop == True and self.ladderCount >= 200: 
+			print("####7####")
 			if self.state == False:
 				self.steering_angle = [[3.2, 3.2, 3.0, 3.0]]
 				self.arm_front_rotSpeed = 0.0 * self.max_arms_rotational_speed
@@ -748,25 +732,20 @@ class RosiNodeClass():
 				if abs(self.ang) >= 0:
 					self.ang = 0 	
 
-		# 4.10. Stop motors
-		if self.contStart >= 1030 + offset_lap and self.contStart < 1050 + offset_lap: 
-			#print("####8####")
-			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
-
-		# 4.11. Move back
-		if self.contStart >= 1050 + offset_lap and self.contStart < 1280 + offset_lap: 
-			#print("####9####")
+		# 1.7. Move back
+		if self.touch == True and self.state3 == False and self.state8 == True: 
+			print("####9####")
 			if self.state8 == True:
 				self.steering_angle = [[-4.0, -4.0, -4.15, -4.15]]
-				self.arm_front_rotSpeed = 1.2 * self.max_arms_rotational_speed
+				#self.arm_front_rotSpeed = 1.2 * self.max_arms_rotational_speed
 			else:
 				self.steering_angle = [[-8.0, -8.0, -8.15, -8.15]]
 
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
-		# 4.12. Start predictions moving back to find rolls
+		# 1.8. Start predictions moving back to find rolls
 		if self.contStart >= 1280 + offset_lap and self.contStart < 1440 + offset_lap:
-			#print("####10####")
+			print("####10####")
 			if self.state5 == True:
 				self.steering_angle = [[-2.0, -2.0, -2.0, -2.0]]
 				self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -787,12 +766,36 @@ class RosiNodeClass():
 					if abs(self.ang) >= 90:
 						self.ang = -90 	
 	
-		# 4.13. Stop robot and finish the tasks
+		# 1.9. Stop robot and finish the tasks
 		if self.contStart >= 1440 + offset_lap: 
-			#print("####11####")
+			print("####11####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 			print("That's all!!!!! Thanks!!!! IFPB and IFBA")
+		return 0
+
+	def put_image_together(self):
+		'''
+		This function is used to concatenate images from kinect and ur5toolCam.
+		Besides that, this function calls the routine to predict the velocity 
+		of the motors and get directions to follow the path.		
+		'''
+		# 1. Create a single image with ur5 and kinect ones
+		self.concatImage = np.concatenate((self.img_out_arm, self.rgbOut), axis=1)
+
+		# 2. Create a array and call the process function
+		image_array = np.asarray(self.concatImage)
+		self.img_out_preprocessed = self.preprocess(image_array)
+
+		# 3. Counting routine to wait robot being ready to go
+		if self.autoModeStart == True:
+			self.contStart = self.contStart + 1
+			if self.state6 == False:
+				print("Almost there...", self.contStart)
+				print(self.latitude, self.longitude)
+
+		# 4. This functions call the state machine
+		self.state_machine()
 
 		# 5. Call save functions for tranning the CNN
 		if self.save_image_flag:
@@ -828,6 +831,7 @@ class RosiNodeClass():
 		if abs(torque) >=0.5:
 			self.state6 = False
 			self.state3 = False
+			self.touch = True			
 
 		#print("Torque Sensor Test", msg)
 		return None
