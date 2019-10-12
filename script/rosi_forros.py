@@ -733,19 +733,17 @@ class RosiNodeClass():
 					self.ang = 0 	
 
 		# 1.7. Move back
-		if self.touch == True and self.state3 == False and self.state8 == True: 
-			print("####9####")
-			if self.state8 == True:
-				self.steering_angle = [[-4.0, -4.0, -4.15, -4.15]]
-				#self.arm_front_rotSpeed = 1.2 * self.max_arms_rotational_speed
-			else:
-				self.steering_angle = [[-8.0, -8.0, -8.15, -8.15]]
-
+		if self.touch == True and self.state3 == False and self.state8 == True and self.check_state_transition(ellipseEquation3) == False and self.ladderCount <= 300: 
+			print("####8####")
+			self.climbStop == False
+			self.steering_angle = [[-8.0, -8.0, -8.15, -8.15]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+			self.ladderCount = self.ladderCount + 1
 
 		# 1.8. Start predictions moving back to find rolls
-		if self.contStart >= 1280 + offset_lap and self.contStart < 1440 + offset_lap:
-			print("####10####")
+		if self.climbState == True and self.touch == True and self.ladderCount > 300:
+			print("####9####")
+			self.touch == False
 			if self.state5 == True:
 				self.steering_angle = [[-2.0, -2.0, -2.0, -2.0]]
 				self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -765,10 +763,11 @@ class RosiNodeClass():
 					self.pub_roll_arm_position([-90.0, self.ang2, -10.0, 40.0, 90.0, 0.0])
 					if abs(self.ang) >= 90:
 						self.ang = -90 	
-	
+			self.ladderCount = self.ladderCount + 1
+
 		# 1.9. Stop robot and finish the tasks
-		if self.contStart >= 1440 + offset_lap: 
-			print("####11####")
+		if self.ladderCount >=500: 
+			print("####10####")
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 			print("That's all!!!!! Thanks!!!! IFPB and IFBA")
