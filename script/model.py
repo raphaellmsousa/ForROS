@@ -26,10 +26,6 @@ import os
 import csv
 import cv2
 import numpy as np
-import sklearn
-
-from sklearn.utils import shuffle
-from sklearn.model_selection import train_test_split
 
 from keras.models import Sequential
 from keras.layers import Lambda, Cropping2D
@@ -41,15 +37,13 @@ from keras.models import load_model
 
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 
-from sklearn import preprocessing
-
 # Load data for training ############################################################################
 
 #model = load_model('model.h5')
 
 samples = []
-PATH_log = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t9/robotCommands/driving_log.csv'
-PATH_IMG = '/home/raphaell/catkin_ws_ROSI/src/rosi_defy/script/t9/rgb_data/'
+PATH_log = '/home/raphaell/catkin_ws/src/rosi_defy_forros/script/robotCommands/driving_log.csv'
+PATH_IMG = '/home/raphaell/catkin_ws/src/rosi_defy_forros/script/rgb_data/'
 
 lines = []
 with open(PATH_log) as csvfile:
@@ -93,8 +87,7 @@ def load_img():
        	join = [join0, join1, join2, join3]
 	joins.append(join)
 	
-	count = count + 1
-              
+	count = count + 1              
         
     return images, joins
 
@@ -130,4 +123,4 @@ model.compile(optimizer='adam', loss='mse')
 model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
 model.fit(np.array(X_train), y_train, validation_split = 0.0, shuffle = True, epochs = 3, callbacks=callbacks)
 
-model.save('modelLadder.h5')
+model.save('startModel.h5')
