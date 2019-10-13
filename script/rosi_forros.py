@@ -47,6 +47,8 @@ import matplotlib.pyplot as plt
 
 import rospkg
 
+import os
+
 ###############################################################################################################################
 #	Uncomment to use the model
 ###############################################################################################################################
@@ -54,6 +56,9 @@ import rospkg
 rospack = rospkg.RosPack()
 #get the file path for rospy_tutorials
 pathToPack = rospack.get_path('rosi_defy_forros')
+
+model0 = load_model(pathToPack + '/script/startModel.h5') # Replace with your path folder
+model0._make_predict_function()
 
 model1 = load_model(pathToPack + '/script/model.h5') # Replace with your path folder
 model1._make_predict_function()
@@ -90,17 +95,16 @@ class RosiNodeClass():
 		self.tractionCommand = None
 		self.countImageDepth = 0
 		self.countImageRGB = 0
-		self.flag = "w"
 		self.save_image_flag = False #Flag to save image
 		self.steering_angle = None
-		self.autoModeStart = True #Set "True" for autonomous mode or "False" to select by joystick
+		self.autoModeStart = True #Set "True" for autonomous mode or "False" to select by joystick and uncomment this line: self.autoMode = self.autoMode + msg.buttons[9]
 		self.moveArm = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 		self.camera_image_arm = None
 		self.img_out_arm = None
 		self.rgbOut = None
 		self.concatImage = None
 		self.contStart = 0
-		self.offset = 0 # Used to create dataset
+		self.offset = 11000 # Used to create dataset
 		self.arm_joint = []
 		self.thetaAll = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # in deg
 		self.jointSelect = 0
@@ -143,6 +147,7 @@ class RosiNodeClass():
 		self.stage8 = False
 		self.stage9 = False
 		self.stage10 = False
+		self.startPosition = False
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -433,6 +438,7 @@ class RosiNodeClass():
 	# joystick callback function
 	def callback_Joy(self, msg):
 		#rospy.loginfo("Joy Test")
+		print("#############Joy Test##############")
 		# saving joy commands
 		axes_lin = msg.axes[1]
 		axes_ang = msg.axes[0]
@@ -447,7 +453,7 @@ class RosiNodeClass():
 		record = msg.buttons[10] # Used to record data for training the CNN
 		# To choose autonomous mode using joystick, uncomment next line and 
 		# set variable self.autoModeStart to False in the list of variables
-		#self.autoMode = self.autoMode + msg.buttons[9]
+		self.autoMode = self.autoMode + msg.buttons[9]
 
 		if record == 1:
 			self.save_image_flag = True
@@ -626,6 +632,16 @@ class RosiNodeClass():
 		1. First lap: colecting images, detecting fire and avoiding obstacles
 		2. Secound lap: climbing stairs and touching rolls
 		'''	
+
+		# GPS start model 
+		x0 = -7.710 #latitude
+		y0 = 2.351 #longitude
+
+		ellipseEquation0 = self.build_ellipse(x0, y0)
+
+		if self.check_state_transition(ellipseEquation0) == True:
+			self.startPosition = True
+
 		# GPS ladder coodinate 
 		x = -45.297 #latitude
 		y = 3.888 #longitude
@@ -668,10 +684,15 @@ class RosiNodeClass():
 			self.arm_front_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_right
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_left		
 
-		# 1.2. Start prediction model 1
-		if self.contStart >= 300 and self.changeModel == False and self.stage2 == False: 
+		# 1.2. Start prediction model 0 (start robot from anywhere)
+		if self.contStart >= 300 and self.changeModel == False and self.stage2 == False and self.startPosition == False: 
 			print("####2####")
 			self.stage1 = True
+			self.steering_angle = model0.predict(self.img_out_preprocessed[None, :, :, :], batch_size=1)
+
+		# 1.2. Start prediction model 1
+		if self.contStart >= 300 and self.changeModel == False and self.stage2 == False and self.startPosition == True: 
+			print("####2.1####")
 			self.steering_angle = model1.predict(self.img_out_preprocessed[None, :, :, :], batch_size=1)
 
 		# 1.3. Start prediction model 2
