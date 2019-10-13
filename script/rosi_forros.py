@@ -133,6 +133,16 @@ class RosiNodeClass():
 		self.ladderCount = 0
 		self.img_out_preprocessed = None
 		self.touch = False
+		self.stage1 = False
+		self.stage2 = False
+		self.stage3 = False
+		self.stage4 = False
+		self.stage5 = False
+		self.stage6 = False
+		self.stage7 = False
+		self.stage8 = False
+		self.stage9 = False
+		self.stage10 = False
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -246,11 +256,9 @@ class RosiNodeClass():
 		h = self.latitude #x
 		k = self.longitude #y
 		a = 1.2
-		b = 0.2
+		b = 0.1
 		
-		ellipseEquation = ((x - h)**2)/(b**2) + ((y - k)**2)/(a**2)
-
-		return ellipseEquation
+		return ((x - h)**2)/(b**2) + ((y - k)**2)/(a**2)
 
 	def check_state_transition(self, ellipseEquation):
 		'''
@@ -614,10 +622,10 @@ class RosiNodeClass():
 
 	def state_machine(self):
 		'''
-
-		'''
-		offset_lap = 2350 
-
+		This is our state machine designed to complete the tasks by stages, as follow:
+		1. First lap: colecting images, detecting fire and avoiding obstacles
+		2. Secound lap: climbing stairs and touching rolls
+		'''	
 		# GPS ladder coodinate 
 		x = -45.297 #latitude
 		y = 3.888 #longitude
@@ -655,40 +663,45 @@ class RosiNodeClass():
 			self.climbStop = True
 
 		# 1.1. Robot start position 
-		if self.contStart >= 0 and self.contStart < 300:
+		if self.contStart >= 0 and self.contStart < 300 and self.stage1 == False:
 			print("####1####")
 			self.arm_front_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_right
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_left		
 
 		# 1.2. Start prediction model 1
-		if self.contStart >= 300 and self.changeModel == False: 
+		if self.contStart >= 300 and self.changeModel == False and self.stage2 == False: 
 			print("####2####")
+			self.stage1 = True
 			self.steering_angle = model1.predict(self.img_out_preprocessed[None, :, :, :], batch_size=1)
 
 		# 1.3. Start prediction model 2
-		if self.ladderState == True and self.changeModel == True and self.climbState == False:
+		if self.ladderState == True and self.changeModel == True and self.climbState == False and self.stage3 == False:
 			print("####3####")
+			self.stage2 = True
 			self.steering_angle = model2.predict(self.img_out_preprocessed[None, :, :, :], batch_size=1)
 			self.arm_front_rotSpeed = 0 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = 0 * self.max_arms_rotational_speed
 
 		# 1.4. Front arm go down and stop motors	
-		if self.ladderState == True and self.changeModel == True and self.climbState == True and self.ladderCount < 100:
+		if self.ladderState == True and self.changeModel == True and self.climbState == True and self.stage4 == False and self.ladderCount < 100:
 			print("####4####")
+			self.stage3 = True
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.arm_front_rotSpeed = 1.8 * self.max_arms_rotational_speed
 			self.ladderCount = self.ladderCount + 1
 
 		# 1.5. Climbing stairs
-		if self.changeModel == True and self.climbState == True and self.climbStop == False and self.ladderCount>=100:
+		if self.changeModel == True and self.climbState == True and self.ladderCount>=100 and self.stage5 == False:
 			print("####5####")
+			self.stage4 = True
 			self.steering_angle = [[15.0, 15.0, 15.0, 15.0]]
 			self.arm_front_rotSpeed = -0.4 * self.max_arms_rotational_speed
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed
 
 		# 4.8. Stop motors
-		if self.climbStop == True and self.ladderCount >=100 and self.ladderCount < 200: 
+		if self.check_state_transition(ellipseEquation4) == True and self.ladderCount >=100 and self.ladderCount < 200 and self.stage6 == False: 
 			print("####6####")
+			self.stage5 = True
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.pub_roll_arm_position([-90.0, 0.0, 0.0, 30.0, 90.0, 0.0])
 			self.arm_front_rotSpeed = 0.5 * self.max_arms_rotational_speed
@@ -696,8 +709,9 @@ class RosiNodeClass():
 			self.ladderCount = self.ladderCount + 1
 
 		# 1.6. Move foward or get rolls
-		if self.climbStop == True and self.ladderCount >= 200: 
+		if self.climbStop == True and self.ladderCount >= 200 and self.stage7 == False: 
 			print("####7####")
+			self.stage6 = True
 			if self.state == False:
 				self.steering_angle = [[3.2, 3.2, 3.0, 3.0]]
 				self.arm_front_rotSpeed = 0.0 * self.max_arms_rotational_speed
@@ -733,16 +747,18 @@ class RosiNodeClass():
 					self.ang = 0 	
 
 		# 1.7. Move back
-		if self.touch == True and self.state3 == False and self.state8 == True and self.check_state_transition(ellipseEquation3) == False and self.ladderCount <= 300: 
+		if self.touch == True and self.state3 == False and self.state8 == True and self.check_state_transition(ellipseEquation3) == False and self.ladderCount <= 300 and self.stage8 == False: 
 			print("####8####")
+			self.stage7 = True
 			self.climbStop == False
 			self.steering_angle = [[-8.0, -8.0, -8.15, -8.15]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 			self.ladderCount = self.ladderCount + 1
 
 		# 1.8. Start predictions moving back to find rolls
-		if self.climbState == True and self.touch == True and self.ladderCount > 300:
+		if self.climbState == True and self.touch == True and self.ladderCount > 300 and self.stage9 == False:
 			print("####9####")
+			self.stage8 = True
 			self.touch == False
 			if self.state5 == True:
 				self.steering_angle = [[-2.0, -2.0, -2.0, -2.0]]
@@ -766,8 +782,9 @@ class RosiNodeClass():
 			self.ladderCount = self.ladderCount + 1
 
 		# 1.9. Stop robot and finish the tasks
-		if self.ladderCount >=500: 
+		if self.ladderCount >=500 and self.stage10 == False: 
 			print("####10####")
+			self.stage9 = True
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 			print("That's all!!!!! Thanks!!!! IFPB and IFBA")
