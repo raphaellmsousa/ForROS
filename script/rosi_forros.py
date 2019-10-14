@@ -675,7 +675,7 @@ class RosiNodeClass():
 
 		ellipseEquation4 = self.build_ellipse(x4, y4)
 
-		if self.check_state_transition(ellipseEquation4) == True:
+		if self.check_state_transition(ellipseEquation4) == True and self.changeModel == True:
 			self.climbStop = True
 
 		# 1.1. Robot start position 
@@ -729,8 +729,13 @@ class RosiNodeClass():
 			self.arm_rear_rotSpeed = 0.2 * self.max_arms_rotational_speed
 			self.ladderCount = self.ladderCount + 1
 
+		print("debug")
+		print(self.climbStop)
+		print(self.ladderCount)
+		print(self.stage7)
+
 		# 1.6. Move foward or get rolls
-		if self.climbStop == True and self.ladderCount >= 200 and self.stage7 == False: 
+		if self.climbStop == True and self.ladderCount <= 200 and self.stage7 == False: 
 			print("####7####")
 			self.stage6 = True
 			if self.state == False:
