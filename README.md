@@ -129,6 +129,7 @@ Institutions: Federal Institute of Paraiba - IFPB - (Cajazeiras) and Federal Ins
 * Lucas dos Santos Ribeiro (IFBA)
 * Félix Santana Brito (IFBA)
 * José Alberto Diaz Amado (IFBA)
+* Matheus Vilela Novaes (IFBA)
 
 
 ## License
