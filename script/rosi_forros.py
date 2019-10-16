@@ -719,7 +719,7 @@ class RosiNodeClass():
 			print("####2.2####")
 			self.steering_angle = model1.predict(self.img_out_preprocessed[None, :, :, :], batch_size=1)
 			# Just a small trajectory correction to help the CNN avoid obstacle
-			self.steering_angle = self.steering_angle * [[1.0, 1.0, 1.05, 1.05]] 
+			self.steering_angle = self.steering_angle * [[1.0, 1.0, 1.02, 1.02]] 
 
 		# 1.5. Start prediction model 2
 		if self.ladderState == True and self.changeModel == True and self.climbState == False and self.stage3 == False:
@@ -760,6 +760,7 @@ class RosiNodeClass():
 		# 1.9. Move foward or get rolls
 		if self.climbStop == True and self.ladderCount >= 230 and self.ladderCount <= 300 and self.stage7 == False: 
 			print("####7####")
+			self.climbState = False
 			self.stage6 = True
 			if self.state == False:
 				self.steering_angle = [[3.2, 3.2, 3.0, 3.0]]
@@ -789,23 +790,23 @@ class RosiNodeClass():
 					self.state7 = False
 
 		# 1.10. Move back
-		if self.state3 == False and self.state8 == True and self.climbState == False or self.endLadder == True: 
+		if self.state3 == False and self.state8 == True and self.climbState == False or self.endLadder == True and self.stage8 == False: 
 			print("####8####")
 			self.stage7 = True
-			self.climbStop = False
-			self.climbState = False 
-			self.steering_angle = [[-8.0, -8.0, -8.15, -8.15]]
+			self.climbStop = False 
+			self.steering_angle = [[-8.0, -8.0, -8.0, -8.0]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
+		print("debug")
 		print(self.climbState)
 		print(self.stage5)
 		print(self.stage9)
-		print("debug")
+		print(self.ladderCount)		
 
 		# 1.11. Start predictions moving back to find rolls
-		if self.climbState == True and self.stage5 == True and self.stage9 == False:
+		if self.climbState == True and self.stage5 == True and self.stage9 == False or (self.climbState == True and self.endLadder == True):
 			print("####9####")
-			self.stage8 = False
+			self.stage8 = True
 			self.endLadder == False
 			if self.state5 == True:
 				self.steering_angle = [[-2.0, -2.0, -2.0, -2.0]]
@@ -829,8 +830,8 @@ class RosiNodeClass():
 			self.ladderCount = self.ladderCount + 1
 
 		# 1.12. Stop robot and finish the tasks
-		if self.ladderCount >=500 and self.stage10 == False: 
-			#print("####10####")
+		if self.ladderCount >=700 and self.stage10 == False: 
+			print("####10####")
 			self.stage9 = True			
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
