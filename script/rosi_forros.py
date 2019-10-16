@@ -49,6 +49,9 @@ import rospkg
 
 import os
 
+from sensor_msgs.msg import Imu
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+
 ###############################################################################################################################
 #	Uncomment to use the model
 ###############################################################################################################################
@@ -65,6 +68,8 @@ model1._make_predict_function()
 
 model2 = load_model(pathToPack + '/script/modelLadder.h5') # Replace with your path folder
 model2._make_predict_function()
+
+RadToDeg = 57.32
 
 class RosiNodeClass():
 
@@ -149,6 +154,7 @@ class RosiNodeClass():
 		self.startPosition = False
 		self.helpLadder = False
 		self.endLadder = False
+		self.yawOut = 0
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -179,6 +185,9 @@ class RosiNodeClass():
 
 		# gps
 		self.sub_gps = rospy.Subscriber('/sensor/gps', NavSatFix, self.callback_gps)
+
+		# Imu
+		self.sub_Imu = rospy.Subscriber('/sensor/imu', Imu, self.callback_imu)
 
 		# defining the eternal loop frequency
 		node_sleep_rate = rospy.Rate(10)
@@ -510,6 +519,24 @@ class RosiNodeClass():
 		#else:
 		#	self.arm_rear_rotSpeed = self.max_arms_rotational_speed * self.trigger_left
 
+	def callback_imu(self, msg):
+		'''
+		Callback function of the Imu Sensor. Here we get the yaw orientation fo the robot
+		'''
+		#print("Sensor Imu")
+		global roll, pitch, yaw
+		orientation_q = msg.orientation
+		orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+		(roll, pitch, yaw) = euler_from_quaternion (orientation_list)
+		yawDeg = yaw * RadToDeg
+		
+		if yawDeg <0:
+			self.yawOut = yawDeg + 360
+		else:
+			self.yawOut = yawDeg
+		print(self.yawOut)
+		return 0
+
 	def callback_kinect_rgb(self, msg):
 		'''
 		Kinect callback function
@@ -702,7 +729,14 @@ class RosiNodeClass():
 			print("####1####")
 			self.arm_front_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_right
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_left		
-
+			
+			if self.yawOut >= 175 and self.yawOut <= 195:
+				print("ok")
+				self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+			else:
+				print("should turn!")
+				self.steering_angle = [[-4.0, -4.0, 4.0, 4.0]] 
+			
 		# 1.2. Start prediction model 0 (start robot from anywhere)
 		if self.contStart >= 300 and self.changeModel == False and self.stage2 == False and self.startPosition == False: 
 			print("####2####")
@@ -797,12 +831,6 @@ class RosiNodeClass():
 			self.steering_angle = [[-8.0, -8.0, -8.0, -8.0]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
-		print("debug")
-		print(self.climbState)
-		print(self.stage5)
-		print(self.stage9)
-		print(self.ladderCount)		
-
 		# 1.11. Start predictions moving back to find rolls
 		if self.climbState == True and self.stage5 == True and self.stage9 == False or (self.climbState == True and self.endLadder == True):
 			print("####9####")
@@ -830,7 +858,7 @@ class RosiNodeClass():
 			self.ladderCount = self.ladderCount + 1
 
 		# 1.12. Stop robot and finish the tasks
-		if self.ladderCount >=700 and self.stage10 == False: 
+		if self.ladderCount >=600 and self.stage10 == False: 
 			print("####10####")
 			self.stage9 = True			
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
@@ -917,6 +945,7 @@ class RosiNodeClass():
 		if self.gpsInc == 20:
 			self.latitudes.append(self.latitude)
 			self.longitudes.append(self.longitude)
+			
 			plt.figure(1)
 			plt.title("GPS tracking")
 			plt.plot(self.latitudes, self.longitudes, color='b', label='Path')
@@ -925,6 +954,7 @@ class RosiNodeClass():
 			plt.legend(framealpha=1, frameon=True);
 			plt.grid(True)
 			plt.pause(0.001)
+			
 			self.gpsInc = 0
 			# 3.1. Uncomment to save the map
 			#plt.savefig(pathToPack + '/script/map/map.png') # Replace with your path folder
