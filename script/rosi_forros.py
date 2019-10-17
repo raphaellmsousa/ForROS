@@ -155,6 +155,9 @@ class RosiNodeClass():
 		self.helpLadder = False
 		self.endLadder = False
 		self.yawOut = 0
+		self.leftSide = False
+		self.rightSide = False
+		self.middleSide = False
 
 		# computing the kinematic A matrix
 		self.kin_matrix_A = self.compute_kinematicAMatrix(self.var_lambda, self.wheel_radius, self.ycir)
@@ -262,7 +265,7 @@ class RosiNodeClass():
 
 	# Starting usefull functions
 
-	def build_ellipse(self, x, y):
+	def build_ellipse(self, x, y, a, b):
 		'''
 		This routine is used to detect build an ellipse with GPS data around the robot. 
 		This is used to check the robot position. If a point is within the ellipse, means that 
@@ -270,9 +273,7 @@ class RosiNodeClass():
 		'''
 		h = self.latitude #x
 		k = self.longitude #y
-		a = 1.2
-		b = 0.1
-		
+
 		return ((x - h)**2)/(b**2) + ((y - k)**2)/(a**2)
 
 	def check_state_transition(self, ellipseEquation):
@@ -374,7 +375,8 @@ class RosiNodeClass():
 		'''
 		This function is used to save images in a folder to build a dataset for training the CNN
 		Inputs:
-			- folder (name of the destination folder)
+			- folder (name ofself.leftSide = True
+				self.rightSide = False the destination folder)
 			- frame (frame from cams)
 			- countImage (a count variable used to enumarate the current picture)
 		'''		
@@ -665,7 +667,7 @@ class RosiNodeClass():
 		x0 = -7.710 #latitude
 		y0 = 2.351 #longitude
 
-		ellipseEquation0 = self.build_ellipse(x0, y0)
+		ellipseEquation0 = self.build_ellipse(x0, y0, 1.2, 0.1)
 
 		if self.check_state_transition(ellipseEquation0) == True:
 			self.startPosition = True
@@ -674,7 +676,7 @@ class RosiNodeClass():
 		x = -45.297 #latitude
 		y = 3.888 #longitude
 
-		ellipseEquation = self.build_ellipse(x, y)
+		ellipseEquation = self.build_ellipse(x, y, 1.2, 0.1)
 
 		if self.check_state_transition(ellipseEquation) == True:
 			self.ladderState = True
@@ -683,7 +685,7 @@ class RosiNodeClass():
 		x2 = -27.47 #latitude
 		y2 = 2.55 #longitude
 
-		ellipseEquation2 = self.build_ellipse(x2, y2)
+		ellipseEquation2 = self.build_ellipse(x2, y2, 1.2, 0.1)
 
 		if self.check_state_transition(ellipseEquation2) == True and self.ladderState == True:
 			self.changeModel = True
@@ -692,7 +694,7 @@ class RosiNodeClass():
 		x3 = -42.037 #latitude
 		y3 = 1.782 #longitude
 
-		ellipseEquation3 = self.build_ellipse(x3, y3)
+		ellipseEquation3 = self.build_ellipse(x3, y3, 1.2, 0.1)
 
 		if self.check_state_transition(ellipseEquation3) == True and self.changeModel == True:
 			self.climbState = True
@@ -701,7 +703,7 @@ class RosiNodeClass():
 		x4 = -43.231 #latitude
 		y4 = 1.886 #longitude
 
-		ellipseEquation4 = self.build_ellipse(x4, y4)
+		ellipseEquation4 = self.build_ellipse(x4, y4, 1.2, 0.1)
 
 		if self.check_state_transition(ellipseEquation4) == True and self.changeModel == True:
 			self.climbStop = True
@@ -710,7 +712,7 @@ class RosiNodeClass():
 		x5 = -34.146 #latitude
 		y5 = 2.684 #longitude
 
-		ellipseEquation5 = self.build_ellipse(x5, y5)
+		ellipseEquation5 = self.build_ellipse(x5, y5, 1.2, 0.1)
 
 		if self.check_state_transition(ellipseEquation5) == True and self.changeModel == False:
 			self.helpLadder = True
@@ -719,7 +721,7 @@ class RosiNodeClass():
 		x6 = -50.389 #latitude
 		y6 = 1.907 #longitude
 
-		ellipseEquation6 = self.build_ellipse(x6, y6)
+		ellipseEquation6 = self.build_ellipse(x6, y6, 1.2, 0.1)
 
 		if self.check_state_transition(ellipseEquation6) == True and self.climbStop == True:
 			self.endLadder = True
@@ -730,12 +732,40 @@ class RosiNodeClass():
 			self.arm_front_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_right
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_left		
 			
-			if self.yawOut >= 175 and self.yawOut <= 195:
-				print("ok")
+			ellipseEquation7 = self.build_ellipse(1.324, -3.740, 3.5, 3.5) #left side
+			ellipseEquation8 = self.build_ellipse(1.118, 3.568, 2.8, 2.8) #right side
+
+			if self.check_state_transition(ellipseEquation7) == True:
+				delta = -40
+				self.leftSide = True
+				self.rightSide = False
+				print("left side!")
+
+			if self.check_state_transition(ellipseEquation8) == True:
+				delta = 25
+				self.leftSide = False
+				self.rightSide = True
+				print("right side!")
+
+			if self.check_state_transition(ellipseEquation7) == False and self.check_state_transition(ellipseEquation8) == False:
+				delta = -40
+				self.middleSide = True
+
+			if self.yawOut >= 175 + delta and self.yawOut <= 185 + delta:
 				self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
+
 			else:
-				print("should turn!")
-				self.steering_angle = [[-4.0, -4.0, 4.0, 4.0]] 
+				# middle
+				if self.middleSide == True:
+					self.steering_angle = [[4.0, 4.0, -4.0, -4.0]] 
+
+				# right
+				if self.rightSide == True:
+					self.steering_angle = [[4.0, 4.0, -4.0, -4.0]] 
+			
+				# left
+				if self.leftSide == True:
+					self.steering_angle = [[-4.0, -4.0, 4.0, 4.0]] 
 			
 		# 1.2. Start prediction model 0 (start robot from anywhere)
 		if self.contStart >= 300 and self.changeModel == False and self.stage2 == False and self.startPosition == False: 
