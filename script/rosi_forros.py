@@ -267,9 +267,9 @@ class RosiNodeClass():
 
 	def build_ellipse(self, x, y, a, b):
 		'''
-		This routine is used to detect build an ellipse with GPS data around the robot. 
+		This routine is used to build an ellipse with GPS data around the robot. 
 		This is used to check the robot position. If a point is within the ellipse, means that 
-		the robot is close tho the test point
+		the robot is close to the test point
 		'''
 		h = self.latitude #x
 		k = self.longitude #y
@@ -450,7 +450,7 @@ class RosiNodeClass():
 	# joystick callback function
 	def callback_Joy(self, msg):
 		#rospy.loginfo("Joy Test")
-		print("#############Joy Test##############")
+		#print("#############Joy Test##############")
 		# saving joy commands
 		axes_lin = msg.axes[1]
 		axes_ang = msg.axes[0]
@@ -536,7 +536,7 @@ class RosiNodeClass():
 			self.yawOut = yawDeg + 360
 		else:
 			self.yawOut = yawDeg
-		print(self.yawOut)
+		#print(self.yawOut)
 		return 0
 
 	def callback_kinect_rgb(self, msg):
@@ -727,8 +727,9 @@ class RosiNodeClass():
 			self.endLadder = True
 
 		# 1.1. Robot start position 
+		# In this routin, we use GPS cordinate to define the inicial robot position
 		if self.contStart >= 0 and self.contStart < 300 and self.stage1 == False:
-			print("####1####")
+			#print("####1####")
 			self.arm_front_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_right
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_left		
 			
@@ -739,13 +740,13 @@ class RosiNodeClass():
 				delta = -40
 				self.leftSide = True
 				self.rightSide = False
-				print("left side!")
+				#print("left side!")
 
 			if self.check_state_transition(ellipseEquation8) == True:
 				delta = 25
 				self.leftSide = False
 				self.rightSide = True
-				print("right side!")
+				#print("right side!")
 
 			if self.check_state_transition(ellipseEquation7) == False and self.check_state_transition(ellipseEquation8) == False:
 				delta = -40
@@ -769,13 +770,13 @@ class RosiNodeClass():
 			
 		# 1.2. Start prediction model 0 (start robot from anywhere)
 		if self.contStart >= 300 and self.changeModel == False and self.stage2 == False and self.startPosition == False: 
-			print("####2####")
+			#print("####2####")
 			self.stage1 = True
 			self.steering_angle = model0.predict(self.img_out_preprocessed[None, :, :, :], batch_size=1)
 
 		# 1.3. Start prediction model 1
 		if self.contStart >= 300 and self.changeModel == False and self.stage2 == False and self.startPosition == True: 
-			print("####2.1####")
+			#print("####2.1####")
 			self.steering_angle = model1.predict(self.img_out_preprocessed[None, :, :, :], batch_size=1)
 
 		# 1.4. Start prediction model 1
@@ -787,7 +788,7 @@ class RosiNodeClass():
 
 		# 1.5. Start prediction model 2
 		if self.ladderState == True and self.changeModel == True and self.climbState == False and self.stage3 == False:
-			print("####3####")
+			#print("####3####")
 			self.stage2 = True
 			self.steering_angle = model2.predict(self.img_out_preprocessed[None, :, :, :], batch_size=1)
 			self.arm_front_rotSpeed = 0 * self.max_arms_rotational_speed
@@ -795,7 +796,7 @@ class RosiNodeClass():
 
 		# 1.6. Front arm go down and stop motors	
 		if self.ladderState == True and self.changeModel == True and self.climbState == True and self.stage4 == False and self.ladderCount < 100:
-			print("####4####")
+			#print("####4####")
 			self.stage3 = True
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
 			self.arm_front_rotSpeed = 1.8 * self.max_arms_rotational_speed
@@ -803,7 +804,7 @@ class RosiNodeClass():
 
 		# 1.7. Climbing stairs
 		if self.changeModel == True and self.climbState == True and self.ladderCount>=100 and self.stage5 == False:
-			print("####5####")
+			#print("####5####")
 			self.stage4 = True
 			self.steering_angle = [[15.0, 15.0, 15.0, 15.0]]
 			self.arm_front_rotSpeed = -0.4 * self.max_arms_rotational_speed
@@ -812,7 +813,7 @@ class RosiNodeClass():
 
 		# 1.8. Stop motors
 		if self.climbStop == True and self.ladderCount >=150 and self.ladderCount < 230 and self.stage6 == False: 
-			print("####6####")
+			#print("####6####")
 			self.stage5 = True
 			self.climbState = False
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
@@ -823,7 +824,7 @@ class RosiNodeClass():
 
 		# 1.9. Move foward or get rolls
 		if self.climbStop == True and self.ladderCount >= 230 and self.ladderCount <= 300 and self.stage7 == False: 
-			print("####7####")
+			#print("####7####")
 			self.climbState = False
 			self.stage6 = True
 			if self.state == False:
@@ -855,7 +856,7 @@ class RosiNodeClass():
 
 		# 1.10. Move back
 		if self.state3 == False and self.state8 == True and self.climbState == False or self.endLadder == True and self.stage8 == False: 
-			print("####8####")
+			#print("####8####")
 			self.stage7 = True
 			self.climbStop = False 
 			self.steering_angle = [[-8.0, -8.0, -8.0, -8.0]]
@@ -863,7 +864,7 @@ class RosiNodeClass():
 
 		# 1.11. Start predictions moving back to find rolls
 		if self.climbState == True and self.stage5 == True and self.stage9 == False or (self.climbState == True and self.endLadder == True):
-			print("####9####")
+			#print("####9####")
 			self.stage8 = True
 			self.endLadder == False
 			if self.state5 == True:
@@ -889,7 +890,7 @@ class RosiNodeClass():
 
 		# 1.12. Stop robot and finish the tasks
 		if self.ladderCount >=600 and self.stage10 == False: 
-			print("####10####")
+			#print("####10####")
 			self.stage9 = True			
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 			self.steering_angle = [[0.0, 0.0, 0.0, 0.0]]
