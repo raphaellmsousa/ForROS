@@ -1,4 +1,4 @@
- # rosi simulation parameters
+# rosi simulation parameters
  rosi_simulation: 
 
   # Simulation Rendering Flag
@@ -23,6 +23,7 @@
 
   # Hokuyo drawing lines 
   # enable it for seeing hokuyo lines
+  # ATTENTION: This feature is strictly visual and do not affect velodyne processing
   # possible values: true, false.
   hokuyo_lines: false
 
@@ -34,3 +35,8 @@
   # Fire enabling
   # allows to enable/disable the fire
   fire_rendering: true
+
+  # Changes the kinect message header's time
+  # Enable it for changing to sim.getSimulationTime()
+  # possible values: true (time from Simulation) or false (time from ROS)
+  time_header_getSimTime: false
