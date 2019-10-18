@@ -856,8 +856,9 @@ class RosiNodeClass():
 			#print("####8####")
 			self.stage7 = True
 			self.climbStop = False 
-			self.steering_angle = [[-8.0, -8.0, -8.0, -8.0]]
 			self.pub_roll_arm_position([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+			self.steering_angle = [[-8.0, -8.0, -8.0, -8.0]]
+			
 
 		# 1.11. Start predictions moving back to find rolls
 		if self.climbState == True and self.stage5 == True and self.stage9 == False or (self.climbState == True and self.endLadder == True):
