@@ -740,12 +740,14 @@ class RosiNodeClass():
 				delta = -40
 				self.leftSide = True
 				self.rightSide = False
+				self.middleSide = False
 				#print("left side!")
 
 			if self.check_state_transition(ellipseEquation8) == True:
 				delta = 25
 				self.leftSide = False
 				self.rightSide = True
+				self.middleSide = False
 				#print("right side!")
 
 			if self.check_state_transition(ellipseEquation7) == False and self.check_state_transition(ellipseEquation8) == False:
@@ -758,15 +760,18 @@ class RosiNodeClass():
 			else:
 				# middle
 				if self.middleSide == True:
-					self.steering_angle = [[4.0, 4.0, -4.0, -4.0]] 
+					self.steering_angle = [[-4.0, -4.0, 4.0, 4.0]] 
+					#print("middle")
 
 				# right
 				if self.rightSide == True:
 					self.steering_angle = [[4.0, 4.0, -4.0, -4.0]] 
+					#print("right")
 			
 				# left
 				if self.leftSide == True:
 					self.steering_angle = [[-4.0, -4.0, 4.0, 4.0]] 
+					#print("left")
 			
 		# 1.2. Start prediction model 0 (start robot from anywhere)
 		if self.contStart >= 300 and self.changeModel == False and self.stage2 == False and self.startPosition == False: 
