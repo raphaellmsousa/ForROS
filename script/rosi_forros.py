@@ -757,7 +757,7 @@ class RosiNodeClass():
 
 				# right
 				if self.rightSide == True:
-					self.steering_angle = [[2.0, 4.0, -2.0, -4.0]] 
+					self.steering_angle = [[-2.0, -4.0, 2.0, 4.0]] 
 					#print("right")
 			
 				# left
