@@ -22,35 +22,27 @@
 ###############################################################################################################################
 
 import rospy
+import rospkg
 import numpy as np
 from rosi_defy_forros.msg import RosiMovement
 from rosi_defy_forros.msg import RosiMovementArray
 from rosi_defy_forros.msg import ManipulatorJoints
+from rosi_defy_forros.msg import HokuyoReading
 from sensor_msgs.msg import Joy
 from sensor_msgs.msg import Image
+from sensor_msgs.msg import NavSatFix
 from std_msgs.msg import Float32
 from geometry_msgs.msg import TwistStamped
-from sensor_msgs.msg import NavSatFix
-
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
-import numpy as np
-
-from sensor_msgs.msg import PointCloud
-from rosi_defy_forros.msg import HokuyoReading
-
 import csv
-
 from keras.models import load_model
-
 import matplotlib.pyplot as plt
-
-import rospkg
-
 import os
-
 from sensor_msgs.msg import Imu
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
+import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 ###############################################################################################################################
 #	Uncomment to use the model
