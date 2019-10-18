@@ -726,7 +726,7 @@ class RosiNodeClass():
 			self.arm_rear_rotSpeed = -1.0 * self.max_arms_rotational_speed * 0.5 #self.trigger_left		
 			
 			ellipseEquation7 = self.build_ellipse(1.324, -3.740, 3.5, 3.5) #left side
-			ellipseEquation8 = self.build_ellipse(1.118, 3.568, 2.8, 2.8) #right side
+			ellipseEquation8 = self.build_ellipse(1.118, 3.568, 3.0, 3.0) #right side
 
 			if self.check_state_transition(ellipseEquation7) == True:
 				delta = -40
@@ -752,17 +752,17 @@ class RosiNodeClass():
 			else:
 				# middle
 				if self.middleSide == True:
-					self.steering_angle = [[-4.0, -4.0, 4.0, 4.0]] 
+					self.steering_angle = [[-2.0, -4.0, 2.0, 4.0]] 
 					#print("middle")
 
 				# right
 				if self.rightSide == True:
-					self.steering_angle = [[4.0, 4.0, -4.0, -4.0]] 
+					self.steering_angle = [[2.0, 4.0, -2.0, -4.0]] 
 					#print("right")
 			
 				# left
 				if self.leftSide == True:
-					self.steering_angle = [[-4.0, -4.0, 4.0, 4.0]] 
+					self.steering_angle = [[-2.0, -4.0, 2.0, 4.0]] #[[-4.0, -4.0, 4.0, 4.0]] 
 					#print("left")
 			
 		# 1.2. Start prediction model 0 (start robot from anywhere)
